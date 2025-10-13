@@ -459,7 +459,7 @@ namespace DX12GameProgramming
             _m4xMsaaQuality = msQualityLevels.QualityLevelCount;
 
 #if DEBUG
-            LogAdapters();
+            //LogAdapters();
 #endif
 
             CreateCommandObjects();
@@ -583,7 +583,7 @@ namespace DX12GameProgramming
         private void LogOutputDisplayModes(Output output, Format format)
         {
             foreach (ModeDescription displayMode in output.GetDisplayModeList(format, 0))
-                Debug.WriteLine($"Width = {displayMode.Width} Height = {displayMode.Height} Refresh = {displayMode.RefreshRate}");
+                Debug.WriteLine($"Resolution = {displayMode.Width}x{displayMode.Height}@{displayMode.RefreshRate.Numerator / displayMode.RefreshRate.Denominator:D1}");
         }
 
         private void CalculateFrameRateStats()
