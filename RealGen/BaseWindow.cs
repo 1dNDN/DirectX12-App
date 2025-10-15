@@ -2,6 +2,8 @@
 using System.Drawing;
 using System.Windows.Forms;
 
+using Point = SharpDX.Point;
+
 namespace RealGen;
 
 /// <summary>
@@ -23,6 +25,11 @@ public class BaseWindow : IDisposable
     /// Высота окна
     /// </summary>
     protected int Height { get; set; } = 720;
+
+    /// <summary>
+    /// Соотношение сторон окна. Ширина/Высота
+    /// </summary>
+    protected float AspectRatio => (float)Width / Height;
 
     /// <summary>
     /// Базовая формочка окна

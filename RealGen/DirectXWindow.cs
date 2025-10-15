@@ -484,8 +484,6 @@ public class DirectXWindow : BaseWindow
 
     protected override void Dispose(bool disposing)
     {
-        base.Dispose(disposing);
-
         if (disposing)
         {
             FlushCommandQueue();
@@ -502,6 +500,8 @@ public class DirectXWindow : BaseWindow
             RenderFence?.Dispose();
             RenderDevice?.Dispose();
         }
+
+        base.Dispose(disposing);
     }
 
     private int _frameCount;
