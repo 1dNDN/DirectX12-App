@@ -94,7 +94,7 @@ public class DirectXApp : DirectXWindow
 
         // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
         // Reusing the command list reuses memory.
-        RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
+        RenderCommandList.Reset(RenderDirectCmdListAlloc, PSO);
 
         // Set the viewport and scissor rect. This needs to be reset whenever the command list is reset.
         RenderCommandList.SetViewport(RenderViewport);
@@ -140,31 +140,39 @@ public class DirectXApp : DirectXWindow
         FlushCommandQueue();
     }
 
-//TODO: ябучая математика
+    /// <summary>
+    /// Зенитный угол
+    /// </summary>
     private float _theta = 1.5f * MathUtil.Pi;
-    private float _phi = MathUtil.PiOverFour;
-    private float _radius = 5.0f;
 
+    /// <summary>
+    /// Азимутальный угол
+    /// </summary>
+    private float _phi = MathUtil.PiOverFour;
+
+    /// <summary>
+    ///  Расстояние от камеры до начала координат
+    /// </summary>
+    private float _radius = 5.0f;
 
     protected override void Update(GameTimer gt)
     {
-        // Convert Spherical to Cartesian coordinates.
-        float x = _radius * MathHelper.Sinf(_phi) * MathHelper.Cosf(_theta);
-        float z = _radius * MathHelper.Sinf(_phi) * MathHelper.Sinf(_theta);
-        float y = _radius * MathHelper.Cosf(_phi);
+        // Конвертация сферических координат к декартовым.
+        var x = _radius * MathHelper.Sinf(_phi) * MathHelper.Cosf(_theta);
+        var z = _radius * MathHelper.Sinf(_phi) * MathHelper.Sinf(_theta);
+        var y = _radius * MathHelper.Cosf(_phi);
 
-        // Build the view matrix.
+        // Вычисляем матрицу View
         View = Matrix.LookAtLH(new Vector3(x, y, z), Vector3.Zero, Vector3.Up);
 
         // Simply use identity for world matrix for this demo.
-        Matrix world = Matrix.Identity;
+        var world = Matrix.Identity;
 
         var cb = new ObjectConstants
         {
-            WorldViewProj = Matrix.Transpose(world * View * Proj)
+            WorldViewProj = Matrix.Transpose(world * View * Proj),
         };
 
-        // Update the constant buffer with the latest worldViewProj matrix.
         CurrentConstantBuffer.CopyData(0, ref cb);
     }
 
@@ -180,35 +188,31 @@ public class DirectXApp : DirectXWindow
     {
         if ((button & MouseButtons.Left) != 0)
         {
-            // Make each pixel correspond to a quarter of a degree.
-            float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
-            float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
+            // Один пиксель - четверть градуса.
+            var dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
+            var dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
-            // Update angles based on input to orbit camera around box.
             _theta += dx;
             _phi += dy;
 
-            // Restrict the angle mPhi.
+            // Ограничиваем зенитный угол
             _phi = MathUtil.Clamp(_phi, 0.1f, MathUtil.Pi - 0.1f);
         }
         else if ((button & MouseButtons.Right) != 0)
         {
-            // Make each pixel correspond to a quarter of a degree.
-            float dx = 0.005f * (location.X - _lastMousePos.X);
-            float dy = 0.005f * (location.Y - _lastMousePos.Y);
+            // Один пиксель - четверть градуса.
+            var dx = 0.005f * (location.X - _lastMousePos.X);
+            var dy = 0.005f * (location.Y - _lastMousePos.Y);
 
-            // Update the camera radius based on input.
             _radius += dx - dy;
 
-            // Restrict the radius.
+            // Ограничиваем радиус
             _radius = MathUtil.Clamp(_radius, 3.0f, 15.0f);
         }
 
         _lastMousePos = location;
     }
 
-
-//TODO: endof ябучая математика
     protected override void OnResizeInternal()
     {
         base.OnResizeInternal();

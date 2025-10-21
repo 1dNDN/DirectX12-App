@@ -1,9 +1,3 @@
-//***************************************************************************************
-// color.hlsl by Frank Luna (C) 2015 All Rights Reserved.
-//
-// Transforms and colors geometry.
-//***************************************************************************************
-
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorldViewProj;
@@ -32,9 +26,4 @@ VertexOut VS(VertexIn vin)
     vout.Color = vin.Color;
 
     return vout;
-}
-
-float4 PS(VertexOut pin) : SV_Target
-{
-    return pin.Color;
 }
