@@ -13,7 +13,10 @@ using Resource = SharpDX.Direct3D12.Resource;
 
 namespace RealGen;
 
-public class DirectXWindow : BaseWindow
+/// <summary>
+/// Базовая реализация окошка DirectX, обеспечивающая рендеринг чего-нибудь
+/// </summary>
+public class BaseDirectXWindow : BaseWindow
 {
     /// <summary>
     /// Фабрика DXGI
@@ -112,7 +115,14 @@ public class DirectXWindow : BaseWindow
     /// </summary>
     protected RectangleF ScissorRectangle { get; set; }
 
+    /// <summary>
+    /// Формат пикселей BackBuffer
+    /// </summary>
     protected Format BackBufferFormat { get; } = Format.R8G8B8A8_UNorm;
+
+    /// <summary>
+    /// Формат пикселей depth/stencil
+    /// </summary>
     protected Format DepthStencilFormat { get; } = Format.D24_UNorm_S8_UInt;
 
     /// <summary>
@@ -172,10 +182,17 @@ public class DirectXWindow : BaseWindow
     /// </summary>
     protected int MsaaQuality => M4xMsaaState ? _m4xMsaaQuality - 1 : 0;
 
+    /// <summary>
+    /// Число буферов для SwapChain (backbuffer, screenbuffer)
+    /// </summary>
     protected const int SwapChainBufferCount = 2;
 
+    /// <summary>
+    /// Число кадров для буферизации (двойной, тройной)
+    /// </summary>
+    protected internal const int NumFrameResources = 3;
 
-    /// <<inheritdoc/>
+    /// <inheritdoc/>
     public override void Init()
     {
         // Инициализируем формочку винды
@@ -370,6 +387,7 @@ public class DirectXWindow : BaseWindow
         RenderDsvHeap = RenderDevice.CreateDescriptorHeap(dsvHeapDesc);
     }
 
+    /// <inheritdoc />
     protected override void OnResizeInternal()
     {
         base.OnResizeInternal();
@@ -482,6 +500,7 @@ public class DirectXWindow : BaseWindow
         }
     }
 
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
         if (disposing)

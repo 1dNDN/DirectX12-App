@@ -18,6 +18,9 @@ public class GameTimer
 
     private bool _stopped;
 
+    /// <summary>
+    /// Конструктор часов
+    /// </summary>
     public GameTimer()
     {
         Debug.Assert(Stopwatch.IsHighResolution, "System does not support high-resolution performance counter");

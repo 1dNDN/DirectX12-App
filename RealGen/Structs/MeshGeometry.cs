@@ -95,6 +95,13 @@ public class MeshGeometry : IDisposable
     };
 
     /// <summary>
+    /// MeshGeometry может хранить несколько разных геометрий в одном буфере индексов и вертексов.
+    /// Для того чтобы отрисовывать Submesh, нужно использовать этот словарь.
+    /// </summary>
+    public Dictionary<string, SubmeshGeometry> DrawArgs { get; } = new Dictionary<string, SubmeshGeometry>();
+
+
+    /// <summary>
     ///     Фабрика геометрии. Используется вместо конструктора, чтобы можно было использовать Generic типы как аргументы
     /// </summary>
     /// <param name="device"></param>
@@ -167,6 +174,7 @@ public class MeshGeometry : IDisposable
         return format;
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         foreach (var disposable in _toDispose)

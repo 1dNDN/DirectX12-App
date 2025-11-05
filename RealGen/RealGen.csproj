@@ -12,7 +12,10 @@
 	  <PackageReference Include="SharpDX.DXGI" Version="4.0.1" />
 	  <PackageReference Include="SharpDX.Mathematics" Version="4.0.1" />
 	</ItemGroup>
-	<ItemGroup>
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
 	  <Content Include="Shaders\pixel.hlsl">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>

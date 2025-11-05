@@ -1,15 +1,17 @@
-﻿using System.Windows.Forms;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Windows.Forms;
 
 using RealGen.Utils;
 
 using SharpDX;
-using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 
 namespace RealGen;
 
-public class DirectXApp : DirectXWindow
+public class DirectXApp : BaseDirectXWindow
 {
     /// <summary>
     /// Куча для дескрипторов Constant Buffer
@@ -22,19 +24,25 @@ public class DirectXApp : DirectXWindow
     protected DescriptorHeap[] DescriptorHeaps { get; set; }
 
     /// <summary>
-    /// Инстанс для обращения к constant buffer
+    /// Список кадров (для тройной буферизации)
     /// </summary>
-    internal UploadBuffer<ObjectConstants> CurrentConstantBuffer { get; set; }
+    protected readonly List<Frame> Frames = new(NumFrameResources);
+
+    protected readonly List<AutoResetEvent> FenceEvents = new(NumFrameResources);
+
+    private Frame CurrentFrameResource => Frames[CurrentFrameIndex];
+
+    private AutoResetEvent CurrentFenceEvent => FenceEvents[CurrentFrameIndex];
 
     /// <summary>
-    /// Геометрия сцены
+    /// Индекс текущего кадра в списке кадров
     /// </summary>
-    protected MeshGeometry Geometry { get; set; }
+    protected int CurrentFrameIndex;
 
     /// <summary>
-    /// Описание функции шейдеров
+    /// Геометрии для сцены
     /// </summary>
-    protected RootSignature RenderRootSignature { get; set; }
+    protected readonly Dictionary<string, MeshGeometry> Geometries = new();
 
     /// <summary>
     /// Байткод скомпилированного вертексного шейдера
@@ -47,24 +55,57 @@ public class DirectXApp : DirectXWindow
     private ShaderBytecode PixelShaderByteCode { get; set; }
 
     /// <summary>
-    /// Состояние графического пайплайна
+    /// Состояния графического пайплайна
     /// </summary>
-    private PipelineState PSO { get; set; }
+    protected readonly Dictionary<string, PipelineState> PSOs = new();
+
+    /// <summary>
+    /// Список всех объектов геометрии сцены
+    /// </summary>
+    protected readonly List<RenderItem> SceneItems = [];
+
+    /// <summary>
+    /// Список всех объектов геометрии сцены, поделенных по PSO
+    /// </summary>
+    protected readonly Dictionary<RenderLayer, List<RenderItem>> SceneItemLayers = new(1)
+    {
+        [RenderLayer.Opaque] = [],
+    };
+
+    /// <summary>
+    /// Описание ресурсов для графического пайплайна
+    /// </summary>
+    protected RootSignature RenderRootSignature { get; set; }
 
     /// <summary>
     /// Описание входных аргументов шейдера (вертексного)
     /// </summary>
-    private InputLayoutDescription ShaderInputLayout { get; set; }
+    protected InputLayoutDescription ShaderInputLayout { get; set; }
+
+    /// <summary>
+    /// Буфер констант, привязанных к кадру (например, матрица камеры), с которым мы непосредственно работаем
+    /// </summary>
+    protected PassConstants MainPassConstantBuffer;
+
+    //TODO:
+    protected int _passCbvOffset;
+
+    /// <summary>
+    /// Рисовать ли полигоны в виде сетки или как настоящие. True - в виде сетки, False - как настоящие
+    /// </summary>
+    protected bool IsWireframe = true;
+
+    private Vector3 EyePosition;
 
     /// <summary>
     /// Матрица проекции
     /// </summary>
-    private Matrix Proj { get; set; } = Matrix.Identity;
+    protected Matrix Proj { get; set; } = Matrix.Identity;
 
     /// <summary>
     /// Матрица камеры
     /// </summary>
-    private Matrix View { get; set; } = Matrix.Identity;
+    protected Matrix View { get; set; } = Matrix.Identity;
 
     public override void Init()
     {
@@ -72,12 +113,14 @@ public class DirectXApp : DirectXWindow
 
         RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
 
-        BuildDescriptorHeaps();
-        BuildConstantBuffers();
         BuildRootSignature();
         BuildShadersAndInputLayout();
-        BuildGeometry();
-        BuildPSO();
+        BuildShapesAndGeometry();
+        BuildRenderItems();
+        BuildFrameResources();
+        BuildDescriptorHeaps();
+        BuildConstantBufferViews();
+        BuildPSOs();
 
         RenderCommandList.Close();
         RenderCommandQueue.ExecuteCommandList(RenderCommandList);
@@ -94,7 +137,7 @@ public class DirectXApp : DirectXWindow
 
         // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
         // Reusing the command list reuses memory.
-        RenderCommandList.Reset(RenderDirectCmdListAlloc, PSO);
+        RenderCommandList.Reset(RenderDirectCmdListAlloc, IsWireframe ? PSOs["opaque_wireframe"] : PSOs["opaque"]);
 
         // Set the viewport and scissor rect. This needs to be reset whenever the command list is reset.
         RenderCommandList.SetViewport(RenderViewport);
@@ -114,13 +157,12 @@ public class DirectXApp : DirectXWindow
 
         RenderCommandList.SetGraphicsRootSignature(RenderRootSignature);
 
-        RenderCommandList.SetVertexBuffer(0, Geometry.VertexBufferView);
-        RenderCommandList.SetIndexBuffer(Geometry.IndexBufferView);
-        RenderCommandList.PrimitiveTopology = PrimitiveTopology.TriangleList;
+        var passCbvIndex = _passCbvOffset + CurrentFrameIndex;
+        var passCbvHandle = CbvHeap.GPUDescriptorHandleForHeapStart;
+        passCbvHandle += passCbvIndex * CbvSrvUavDescriptorSize;
+        RenderCommandList.SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
-        RenderCommandList.SetGraphicsRootDescriptorTable(0, CbvHeap.GPUDescriptorHandleForHeapStart);
-
-        RenderCommandList.DrawIndexedInstanced(Geometry.IndexCount, 1, 0, 0, 0);
+        DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.Opaque]);
 
         // Indicate a state transition on the resource usage.
         RenderCommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -155,7 +197,25 @@ public class DirectXApp : DirectXWindow
     /// </summary>
     private float _radius = 5.0f;
 
-    protected override void Update(GameTimer gt)
+    protected override void Update(GameTimer timer)
+    {
+        UpdateCamera();
+
+        CurrentFrameIndex = (CurrentFrameIndex + 1) % NumFrameResources;
+
+        // Has the GPU finished processing the commands of the current frame resource?
+        // If not, wait until the GPU has completed commands up to this fence point.
+        if (CurrentFrameResource.Fence != 0 && RenderFence.CompletedValue < CurrentFrameResource.Fence)
+        {
+            RenderFence.SetEventOnCompletion(CurrentFrameResource.Fence, CurrentFenceEvent.SafeWaitHandle.DangerousGetHandle());
+            CurrentFenceEvent.WaitOne();
+        }
+
+        UpdateObjectCBs();
+        UpdateMainPassCB(timer);
+    }
+
+    private void UpdateCamera()
     {
         // Конвертация сферических координат к декартовым.
         var x = _radius * MathHelper.Sinf(_phi) * MathHelper.Cosf(_theta);
@@ -164,26 +224,63 @@ public class DirectXApp : DirectXWindow
 
         // Вычисляем матрицу View
         View = Matrix.LookAtLH(new Vector3(x, y, z), Vector3.Zero, Vector3.Up);
+    }
 
-        // Simply use identity for world matrix for this demo.
-        var world = Matrix.Identity;
-
-        var cb = new ObjectConstants
+    private void UpdateObjectCBs()
+    {
+        foreach (var e in SceneItems)
         {
-            WorldViewProj = Matrix.Transpose(world * View * Proj),
-        };
+            // Only update the cbuffer data if the constants have changed.
+            // This needs to be tracked per frame resource.
 
-        CurrentConstantBuffer.CopyData(0, ref cb);
+            // Обновляем буфер констант только если константы изменились. Отслеживаем изменения для каждого кадра
+            if (e.NumFramesDirty > 0)
+            {
+                var objConstants = new ObjectConstants
+                {
+                    World = Matrix.Transpose(e.World),
+                };
+                CurrentFrameResource.ObjectConstantBuffer.CopyData(e.ObjCBIndex, ref objConstants);
+
+                e.NumFramesDirty--;
+            }
+        }
+    }
+
+    private void UpdateMainPassCB(GameTimer timer)
+    {
+        var viewProj = View * Proj;
+        var invView = Matrix.Invert(View);
+        var invProj = Matrix.Invert(Proj);
+        var invViewProj = Matrix.Invert(viewProj);
+
+        MainPassConstantBuffer.View = Matrix.Transpose(View);
+        MainPassConstantBuffer.InvView = Matrix.Transpose(invView);
+        MainPassConstantBuffer.Proj = Matrix.Transpose(Proj);
+        MainPassConstantBuffer.InvProj = Matrix.Transpose(invProj);
+        MainPassConstantBuffer.ViewProj = Matrix.Transpose(viewProj);
+        MainPassConstantBuffer.InvViewProj = Matrix.Transpose(invViewProj);
+        MainPassConstantBuffer.EyePosW = EyePosition;
+        MainPassConstantBuffer.RenderTargetSize = new Vector2(Width, Height);
+        MainPassConstantBuffer.InvRenderTargetSize = 1.0f / MainPassConstantBuffer.RenderTargetSize;
+        MainPassConstantBuffer.NearZ = 1.0f;
+        MainPassConstantBuffer.FarZ = 1000.0f;
+        MainPassConstantBuffer.TotalTime = timer.TotalTime;
+        MainPassConstantBuffer.DeltaTime = timer.DeltaTime;
+
+        CurrentFrameResource.PassConstantBuffer.CopyData(0, ref MainPassConstantBuffer);
     }
 
     private Point _lastMousePos;
 
+    /// <inheritdoc />
     protected override void OnMouseDown(MouseButtons button, Point location)
     {
         base.OnMouseDown(button, location);
         _lastMousePos = location;
     }
 
+    /// <inheritdoc />
     protected override void OnMouseMove(MouseButtons button, Point location)
     {
         if ((button & MouseButtons.Left) != 0)
@@ -213,6 +310,22 @@ public class DirectXApp : DirectXWindow
         _lastMousePos = location;
     }
 
+    /// <inheritdoc />
+    protected override void OnKeyDown(Keys keyCode)
+    {
+        if (keyCode == Keys.D1)
+            IsWireframe = false;
+    }
+
+    /// <inheritdoc />
+    protected override void OnKeyUp(Keys keyCode)
+    {
+        base.OnKeyUp(keyCode);
+        if (keyCode == Keys.D1)
+            IsWireframe = true;
+    }
+
+    /// <inheritdoc />
     protected override void OnResizeInternal()
     {
         base.OnResizeInternal();
@@ -226,9 +339,18 @@ public class DirectXApp : DirectXWindow
     /// </summary>
     private void BuildDescriptorHeaps()
     {
+        int objCount = SceneItems.Count;
+
+        // Need a CBV descriptor for each object for each frame resource,
+        // +1 for the perPass CBV for each frame resource.
+        int numDescriptors = (objCount + 1) * NumFrameResources;
+
+        // Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
+        _passCbvOffset = objCount * NumFrameResources;
+
         var cbvHeapDesc = new DescriptorHeapDescription
         {
-            DescriptorCount = 1,
+            DescriptorCount = numDescriptors,
             Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
             Flags = DescriptorHeapFlags.ShaderVisible,
             NodeMask = 0,
@@ -237,19 +359,58 @@ public class DirectXApp : DirectXWindow
         DescriptorHeaps = [CbvHeap];
     }
 
-    private void BuildConstantBuffers()
+    private void BuildConstantBufferViews()
     {
-        var sizeInBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
+        var objectConstantBufferSizeInBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
 
-        CurrentConstantBuffer = new UploadBuffer<ObjectConstants>(RenderDevice, 1, true);
-
-        var cbvDesc = new ConstantBufferViewDescription
+        for (var frameIndex = 0; frameIndex < NumFrameResources; frameIndex++)
         {
-            BufferLocation = CurrentConstantBuffer.Resource.GPUVirtualAddress,
-            SizeInBytes = sizeInBytes,
-        };
-        var cbvHeapHandle = CbvHeap.CPUDescriptorHandleForHeapStart;
-        RenderDevice.CreateConstantBufferView(cbvDesc, cbvHeapHandle);
+            var objectConstantBuffer = Frames[frameIndex].ObjectConstantBuffer.Resource;
+
+            for (var i = 0; i < SceneItems.Count; i++)
+            {
+                var cbAddress = objectConstantBuffer.GPUVirtualAddress;
+
+                // Offset to the ith object constant buffer in the buffer.
+                cbAddress += i * objectConstantBufferSizeInBytes;
+
+                // Offset to the object cbv in the descriptor heap.
+                var heapIndex = frameIndex * SceneItems.Count + i;
+                var handle = CbvHeap.CPUDescriptorHandleForHeapStart;
+                handle += heapIndex * CbvSrvUavDescriptorSize;
+
+                var cbvDesc = new ConstantBufferViewDescription
+                {
+                    BufferLocation = cbAddress,
+                    SizeInBytes = objectConstantBufferSizeInBytes
+                };
+
+                RenderDevice.CreateConstantBufferView(cbvDesc, handle);
+
+            }
+        }
+
+        var passConstantBufferByteSize = BufferUtil.CalcConstantBufferByteSize<PassConstants>();
+
+        // Last three descriptors are the pass CBVs for each frame resource.
+        for (var frameIndex = 0; frameIndex < NumFrameResources; frameIndex++)
+        {
+            var passConstantBuffer = Frames[frameIndex].PassConstantBuffer.Resource;
+            var cbAddress = passConstantBuffer.GPUVirtualAddress;
+
+            // Offset to the pass cbv in the descriptor heap.
+            var heapIndex = _passCbvOffset + frameIndex;
+            var handle = CbvHeap.CPUDescriptorHandleForHeapStart;
+            handle += heapIndex * CbvSrvUavDescriptorSize;
+
+            var cbvDesc = new ConstantBufferViewDescription
+            {
+                BufferLocation = cbAddress,
+                SizeInBytes = passConstantBufferByteSize
+            };
+
+            RenderDevice.CreateConstantBufferView(cbvDesc, handle);
+        }
     }
 
     private void BuildRootSignature()
@@ -263,13 +424,17 @@ public class DirectXApp : DirectXWindow
         // Root parameter can be a table, root descriptor or root constants.
 
         // Create a single descriptor table of CBVs.
-        var cbvTable = new DescriptorRange(DescriptorRangeType.ConstantBufferView, 1, 0);
+        var cbvTable0 = new DescriptorRange(DescriptorRangeType.ConstantBufferView, 1, 0);
+        var cbvTable1 = new DescriptorRange(DescriptorRangeType.ConstantBufferView, 1, 1);
 
         // A root signature is an array of root parameters.
-        var rootSigDesc = new RootSignatureDescription(RootSignatureFlags.AllowInputAssemblerInputLayout, new[]
+        var slotRootParameters = new[]
         {
-            new RootParameter(ShaderVisibility.Vertex, cbvTable)
-        });
+            new RootParameter(ShaderVisibility.Vertex, cbvTable0),
+            new RootParameter(ShaderVisibility.Vertex, cbvTable1)
+        };
+
+        var rootSigDesc = new RootSignatureDescription(RootSignatureFlags.AllowInputAssemblerInputLayout, slotRootParameters);
 
         RenderRootSignature = RenderDevice.CreateRootSignature(rootSigDesc.Serialize());
     }
@@ -287,53 +452,88 @@ public class DirectXApp : DirectXWindow
         ]);
     }
 
-    private void BuildGeometry()
+    private void BuildShapesAndGeometry()
     {
-        Vertex[] vertices =
-        [
-            new Vertex { Pos = new Vector3(-1.0f, -1.0f, -1.0f), Color = Color.White.ToVector4() },
-            new Vertex { Pos = new Vector3(-1.0f, +1.0f, -1.0f), Color = Color.Black.ToVector4() },
-            new Vertex { Pos = new Vector3(+1.0f, +1.0f, -1.0f), Color = Color.Red.ToVector4() },
-            new Vertex { Pos = new Vector3(+1.0f, -1.0f, -1.0f), Color = Color.Green.ToVector4() },
-            new Vertex { Pos = new Vector3(-1.0f, -1.0f, +1.0f), Color = Color.Blue.ToVector4() },
-            new Vertex { Pos = new Vector3(-1.0f, +1.0f, +1.0f), Color = Color.Yellow.ToVector4() },
-            new Vertex { Pos = new Vector3(+1.0f, +1.0f, +1.0f), Color = Color.Cyan.ToVector4() },
-            new Vertex { Pos = new Vector3(+1.0f, -1.0f, +1.0f), Color = Color.Magenta.ToVector4() },
-        ];
+        var vertices = new List<SmallaVertex>();
+        var indices = new List<short>();
 
-        short[] indices =
-        [
-            // front face
-            0, 1, 2,
-            0, 2, 3,
+        //TODO:
+        // SubmeshGeometry box = AppendMeshData(GeometryGenerator.CreateBox(1.5f, 0.5f, 1.5f, 3), Color.DarkGreen, vertices, indices);
+        // SubmeshGeometry grid = AppendMeshData(GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40), Color.ForestGreen, vertices, indices);
+        var sphere = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateSphere(0.5f, 20, 20), Color.DarkRed, vertices, indices);
+        var cylinder = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.5f, 3.0f, 20, 20), Color.SteelBlue, vertices, indices);
 
-            // back face
-            4, 6, 5,
-            4, 7, 6,
 
-            // left face
-            4, 5, 1,
-            4, 1, 0,
+        var geo = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), "baseGeometry");
 
-            // right face
-            3, 2, 6,
-            3, 6, 7,
+        // geo.DrawArgs["box"] = box;
+        // geo.DrawArgs["grid"] = grid;
+        geo.DrawArgs["sphere"] = sphere;
+        geo.DrawArgs["cylinder"] = cylinder;
 
-            // top face
-            1, 5, 6,
-            1, 6, 2,
-
-            // bottom face
-            4, 0, 3,
-            4, 3, 7,
-        ];
-
-        Geometry = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices);
+        Geometries[geo.Name] = geo;
     }
 
-    private void BuildPSO()
+    private void BuildFrameResources()
     {
-        var psoDesc = new GraphicsPipelineStateDescription
+        for (var i = 0; i < NumFrameResources; i++)
+        {
+            Frames.Add(new Frame(RenderDevice, 1, SceneItems.Count));
+            FenceEvents.Add(new AutoResetEvent(false));
+        }
+    }
+
+    [SuppressMessage("ReSharper", "RedundantAssignment")]
+    private void BuildRenderItems()
+    {
+        var itemIndex = 0;
+        var huiTranslation = Matrix.Translation(-1.0F, -1.5F, 0.0F);
+
+        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(0.0f, 0.5f, 0.0f) * huiTranslation);
+        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(2.0f, 0.5f, 0.0f) * huiTranslation);
+        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "cylinder", Matrix.Translation(1.0f, 1.5f, 0.0f) * huiTranslation);
+        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(1.0f, 3.0f, 0.0f) * huiTranslation);
+    }
+
+    private void AddRenderItem(RenderLayer layer, int objConstantBufferIndex, string geoName, string submeshName, Matrix? world = null)
+    {
+        var geo = Geometries[geoName];
+        var submesh = geo.DrawArgs[submeshName];
+        var renderItem = new RenderItem
+        {
+            ObjCBIndex = objConstantBufferIndex,
+            Geo = geo,
+            IndexCount = submesh.IndexCount,
+            StartIndexLocation = submesh.StartIndexLocation,
+            BaseVertexLocation = submesh.BaseVertexLocation,
+            World = world ?? Matrix.Identity,
+        };
+        SceneItemLayers[layer].Add(renderItem);
+        SceneItems.Add(renderItem);
+    }
+
+    private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
+    {
+        foreach (var item in ritems)
+        {
+            cmdList.SetVertexBuffer(0, item.Geo.VertexBufferView);
+            cmdList.SetIndexBuffer(item.Geo.IndexBufferView);
+            cmdList.PrimitiveTopology = item.PrimitiveType;
+
+            // Offset to the CBV in the descriptor heap for this object and for this frame resource.
+            var cbvIndex = CurrentFrameIndex * SceneItems.Count + item.ObjCBIndex;
+            var cbvHandle = CbvHeap.GPUDescriptorHandleForHeapStart;
+            cbvHandle += cbvIndex * CbvSrvUavDescriptorSize;
+
+            cmdList.SetGraphicsRootDescriptorTable(0, cbvHandle);
+
+            cmdList.DrawIndexedInstanced(item.IndexCount, 1, item.StartIndexLocation, item.BaseVertexLocation, 0);
+        }
+    }
+
+    private void BuildPSOs()
+    {
+        var opaquePsoDesc = new GraphicsPipelineStateDescription
         {
             InputLayout = ShaderInputLayout,
             RootSignature = RenderRootSignature,
@@ -348,20 +548,29 @@ public class DirectXApp : DirectXWindow
             SampleDescription = new SampleDescription(MsaaCount, MsaaQuality),
             DepthStencilFormat = DepthStencilFormat,
         };
-        psoDesc.RenderTargetFormats[0] = BackBufferFormat;
+        opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-        PSO = RenderDevice.CreateGraphicsPipelineState(psoDesc);
+        PSOs["opaque"] = RenderDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+
+        var opaqueWireframePsoDesc = opaquePsoDesc;
+        opaqueWireframePsoDesc.RasterizerState.FillMode = FillMode.Wireframe;
+
+        PSOs["opaque_wireframe"] = RenderDevice.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
     }
 
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
             RenderRootSignature?.Dispose();
             CbvHeap?.Dispose();
-            CurrentConstantBuffer?.Dispose();
-            Geometry?.Dispose();
-            PSO?.Dispose();
+            foreach (var frameResource in Frames)
+                frameResource.Dispose();
+            foreach (var geometry in Geometries.Values)
+                geometry.Dispose();
+            foreach (var pso in PSOs.Values)
+                pso.Dispose();
         }
 
         base.Dispose(disposing);
