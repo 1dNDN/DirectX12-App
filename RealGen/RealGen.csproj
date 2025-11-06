@@ -6,6 +6,7 @@
 		<TargetFramework>net8.0-windows</TargetFramework>
 	</PropertyGroup>
 	<ItemGroup>
+	  <PackageReference Include="ObjParser" Version="0.1.0" />
 	  <PackageReference Include="SharpDX" Version="4.0.1" />
 	  <PackageReference Include="SharpDX.D3DCompiler" Version="4.0.1" />
 	  <PackageReference Include="SharpDX.Direct3D12" Version="4.0.1" />
@@ -20,6 +21,19 @@
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>
 	  <Content Include="Shaders\vertex.hlsl">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <None Remove="Models\jenjina.obj" />
+	  <Content Include="Models\jenjina.obj">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <None Remove="Models\yoda.stl" />
+	  <None Remove="Models\loubie_aria_dragon.stl" />
+	  <Content Include="Models\loubie_aria_dragon.stl">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <None Remove="Models\dragon.stl" />
+	  <Content Include="Models\dragon.stl">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>
 	</ItemGroup>

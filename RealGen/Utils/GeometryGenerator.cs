@@ -292,7 +292,7 @@ public static class GeometryGenerator
         }
 
     //TODO:
-    public static SubmeshGeometry AppendMeshData(MeshData meshData, Color color, List<SmallaVertex> vertices, List<short> indices)
+    public static SubmeshGeometry AppendMeshData(MeshData meshData, Color color, List<SmallaVertex> vertices, List<int> indices)
     {
         // Определяем SubmeshGeometry которая описывает часть буфера вершин/индексов, содержащую подгеометрию
 
@@ -300,7 +300,8 @@ public static class GeometryGenerator
         {
             IndexCount = meshData.Indices32.Count,
             StartIndexLocation = indices.Count,
-            BaseVertexLocation = vertices.Count
+            BaseVertexLocation = vertices.Count,
+            World = meshData.NormalizedWorld,
         };
 
         vertices.AddRange(meshData.Vertices.Select(vertex => new SmallaVertex()
@@ -308,7 +309,7 @@ public static class GeometryGenerator
             Pos = vertex.Position,
             Color = color.ToVector4()
         }));
-        indices.AddRange(meshData.GetIndices16());
+        indices.AddRange(meshData.Indices32);
 
         return submesh;
     }
@@ -329,15 +330,15 @@ public static class GeometryGenerator
         // Top vertex.
         meshData.Vertices.Add(new BiggaVertex(new Vector3(0, radius, 0), new Vector3(0, 1, 0), new Vector3(1, 0, 0), Vector2.Zero));
 
-        float phiStep = MathUtil.Pi / stackCount;
-        float thetaStep = 2f * MathUtil.Pi / sliceCount;
+        var phiStep = MathUtil.Pi / stackCount;
+        var thetaStep = 2f * MathUtil.Pi / sliceCount;
 
-        for (int i = 1; i <= stackCount - 1; i++)
+        for (var i = 1; i <= stackCount - 1; i++)
         {
-            float phi = i * phiStep;
-            for (int j = 0; j <= sliceCount; j++)
+            var phi = i * phiStep;
+            for (var j = 0; j <= sliceCount; j++)
             {
-                float theta = j * thetaStep;
+                var theta = j * thetaStep;
 
                 // Spherical to cartesian.
                 var pos = new Vector3(
@@ -352,7 +353,7 @@ public static class GeometryGenerator
                     radius * MathHelper.Sinf(phi) * MathHelper.Cosf(theta));
                 tan.Normalize();
 
-                Vector3 norm = pos;
+                var norm = pos;
                 norm.Normalize();
 
                 var texCoord = new Vector2(theta / (MathUtil.Pi * 2), phi / MathUtil.Pi);
@@ -369,7 +370,7 @@ public static class GeometryGenerator
         // and connects the top pole to the first ring.
         //
 
-        for (int i = 1; i <= sliceCount; i++)
+        for (var i = 1; i <= sliceCount; i++)
         {
             meshData.Indices32.Add(0);
             meshData.Indices32.Add(i + 1);
@@ -380,11 +381,11 @@ public static class GeometryGenerator
         // Compute indices for inner stacks (not connected to poles).
         //
 
-        int baseIndex = 1;
-        int ringVertexCount = sliceCount + 1;
-        for (int i = 0; i < stackCount - 2; i++)
+        var baseIndex = 1;
+        var ringVertexCount = sliceCount + 1;
+        for (var i = 0; i < stackCount - 2; i++)
         {
-            for (int j = 0; j < sliceCount; j++)
+            for (var j = 0; j < sliceCount; j++)
             {
                 meshData.Indices32.Add(baseIndex + i * ringVertexCount + j);
                 meshData.Indices32.Add(baseIndex + i * ringVertexCount + j + 1);
@@ -402,12 +403,12 @@ public static class GeometryGenerator
         //
 
         // South pole vertex was added last.
-        int southPoleIndex = meshData.Vertices.Count - 1;
+        var southPoleIndex = meshData.Vertices.Count - 1;
 
         // Offset the indices to the index of the first vertex in the last ring.
         baseIndex = southPoleIndex - ringVertexCount;
 
-        for (int i = 0; i < sliceCount; i++)
+        for (var i = 0; i < sliceCount; i++)
         {
             meshData.Indices32.Add(southPoleIndex);
             meshData.Indices32.Add(baseIndex + i);

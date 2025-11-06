@@ -1,4 +1,6 @@
-﻿namespace RealGen;
+﻿using SharpDX;
+
+namespace RealGen;
 
 /// <summary>
 /// Определяет часть геометрии в MeshGeometry. Используется, когда несколько геометрий хранятся в одном вертексном и индексном буферах.
@@ -10,5 +12,7 @@ public class SubmeshGeometry
     public int IndexCount { get; set; }
     public int StartIndexLocation { get; set; }
     public int BaseVertexLocation { get; set; }
+
+    public Matrix World { get; set; } = Matrix.Identity;
 
 }

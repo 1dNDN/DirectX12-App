@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Windows.Forms;
 
+using RealGen.Unifiers;
 using RealGen.Utils;
 
 using SharpDX;
@@ -339,11 +341,11 @@ public class DirectXApp : BaseDirectXWindow
     /// </summary>
     private void BuildDescriptorHeaps()
     {
-        int objCount = SceneItems.Count;
+        var objCount = SceneItems.Count;
 
         // Need a CBV descriptor for each object for each frame resource,
         // +1 for the perPass CBV for each frame resource.
-        int numDescriptors = (objCount + 1) * NumFrameResources;
+        var numDescriptors = (objCount + 1) * NumFrameResources;
 
         // Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
         _passCbvOffset = objCount * NumFrameResources;
@@ -455,14 +457,16 @@ public class DirectXApp : BaseDirectXWindow
     private void BuildShapesAndGeometry()
     {
         var vertices = new List<SmallaVertex>();
-        var indices = new List<short>();
+        var indices = new List<int>();
 
         //TODO:
         // SubmeshGeometry box = AppendMeshData(GeometryGenerator.CreateBox(1.5f, 0.5f, 1.5f, 3), Color.DarkGreen, vertices, indices);
         // SubmeshGeometry grid = AppendMeshData(GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40), Color.ForestGreen, vertices, indices);
         var sphere = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateSphere(0.5f, 20, 20), Color.DarkRed, vertices, indices);
         var cylinder = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.5f, 3.0f, 20, 20), Color.SteelBlue, vertices, indices);
+        // var test = GeometryGenerator.AppendMeshData(OBJReader.Import("./Models/jenjina.obj"), Color.BlueViolet, vertices, indices);
 
+        var test = GeometryGenerator.AppendMeshData(STLReader.Import("./Models/jenjina.obj"), Color.SeaGreen, vertices, indices);
 
         var geo = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), "baseGeometry");
 
@@ -470,6 +474,7 @@ public class DirectXApp : BaseDirectXWindow
         // geo.DrawArgs["grid"] = grid;
         geo.DrawArgs["sphere"] = sphere;
         geo.DrawArgs["cylinder"] = cylinder;
+        geo.DrawArgs["test"] = test;
 
         Geometries[geo.Name] = geo;
     }
@@ -487,12 +492,13 @@ public class DirectXApp : BaseDirectXWindow
     private void BuildRenderItems()
     {
         var itemIndex = 0;
-        var huiTranslation = Matrix.Translation(-1.0F, -1.5F, 0.0F);
 
-        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(0.0f, 0.5f, 0.0f) * huiTranslation);
-        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(2.0f, 0.5f, 0.0f) * huiTranslation);
-        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "cylinder", Matrix.Translation(1.0f, 1.5f, 0.0f) * huiTranslation);
-        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(1.0f, 3.0f, 0.0f) * huiTranslation);
+        AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "test", Matrix.Translation(0.0f, 0.5f, 0.0f) * Matrix.Scaling(2.0F) * Matrix.RotationYawPitchRoll(0.0F, 0.0f, -1.0f));
+
+        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(0.0f, 0.5f, 0.0f) * huiTranslation);
+        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(2.0f, 0.5f, 0.0f) * huiTranslation);
+        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "cylinder", Matrix.Translation(1.0f, 1.5f, 0.0f) * huiTranslation);
+        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(1.0f, 3.0f, 0.0f) * huiTranslation);
     }
 
     private void AddRenderItem(RenderLayer layer, int objConstantBufferIndex, string geoName, string submeshName, Matrix? world = null)
@@ -506,8 +512,9 @@ public class DirectXApp : BaseDirectXWindow
             IndexCount = submesh.IndexCount,
             StartIndexLocation = submesh.StartIndexLocation,
             BaseVertexLocation = submesh.BaseVertexLocation,
-            World = world ?? Matrix.Identity,
+            World = submesh.World * world ?? Matrix.Identity,
         };
+
         SceneItemLayers[layer].Add(renderItem);
         SceneItems.Add(renderItem);
     }
