@@ -9,10 +9,11 @@ namespace RealGen;
 /// </summary>
 public class Frame : IDisposable
 {
-    internal Frame(Device device, int passCount, int objectCount)
+    internal Frame(Device device, int passCount, int objectCount, int materialCount)
     {
         CmdListAlloc = device.CreateCommandAllocator(CommandListType.Direct);
         PassConstantBuffer = new UploadBuffer<PassConstants>(device, passCount, true);
+        MaterialConstantBuffer = new UploadBuffer<MaterialConstants>(device, materialCount, true);
         ObjectConstantBuffer = new UploadBuffer<ObjectConstants>(device, objectCount, true);
     }
 
@@ -32,6 +33,12 @@ public class Frame : IDisposable
     /// Каждому кадру нужен свой буфер констант. Нельзя обновлять буфер констант, пока GPU рисует кадр.
     /// </summary>
     internal UploadBuffer<ObjectConstants> ObjectConstantBuffer { get; }
+
+    /// <summary>
+    /// Буфер констант с материалами
+    /// Каждому кадру нужен свой буфер констант. Нельзя обновлять буфер констант, пока GPU рисует кадр.
+    /// </summary>
+    public UploadBuffer<MaterialConstants> MaterialConstantBuffer { get; }
 
     /// <summary>
     /// Барьер для синхронизации использования ресурсов кадра.

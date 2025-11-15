@@ -8,6 +8,135 @@ namespace RealGen.Utils;
 
 public static class GeometryGenerator
 {
+
+    public static MeshData CreateGrid(float width, float depth, int m, int n)
+    {
+        var meshData = new MeshData();
+
+        //
+        // Create the vertices.
+        //
+
+        float halfWidth = 0.5f * width;
+        float halfDepth = 0.5f * depth;
+
+        float dx = width / (n - 1);
+        float dz = depth / (m - 1);
+
+        float du = 1f / (n - 1);
+        float dv = 1f / (m - 1);
+
+        for (int i = 0; i < m; i++)
+        {
+            float z = halfDepth - i * dz;
+            for (int j = 0; j < n; j++)
+            {
+                float x = -halfWidth + j * dx;
+
+                meshData.Vertices.Add(new BiggaVertex(
+                    new Vector3(x, 0, z),
+                    new Vector3(0, 1, 0),
+                    new Vector3(1, 0, 0),
+                    new Vector2(j * du, i * dv))); // Stretch texture over grid.
+            }
+        }
+
+        //
+        // Create the indices.
+        //
+
+        // Iterate over each quad and compute indices.
+        for (int i = 0; i < m - 1; i++)
+        {
+            for (int j = 0; j < n - 1; j++)
+            {
+                meshData.Indices32.Add(i * n + j);
+                meshData.Indices32.Add(i * n + j + 1);
+                meshData.Indices32.Add((i + 1) * n + j);
+
+                meshData.Indices32.Add((i + 1) * n + j);
+                meshData.Indices32.Add(i * n + j + 1);
+                meshData.Indices32.Add((i + 1) * n + j + 1);
+            }
+        }
+
+        return meshData;
+    }
+
+    public static MeshData CreateBox(float width, float height, float depth, int numSubdivisions)
+    {
+        var meshData = new MeshData();
+
+        //
+        // Create the vertices.
+        //
+
+        var w2 = 0.5f * width;
+        var h2 = 0.5f * height;
+        var d2 = 0.5f * depth;
+
+
+        // Fill in the front face vertex data.
+        meshData.Vertices.Add(new BiggaVertex(-w2, -h2, -d2, 0, 0, -1, 1, 0, 0, 0, 1));
+        meshData.Vertices.Add(new BiggaVertex(-w2, +h2, -d2, 0, 0, -1, 1, 0, 0, 0, 0));
+        meshData.Vertices.Add(new BiggaVertex(+w2, +h2, -d2, 0, 0, -1, 1, 0, 0, 1, 0));
+        meshData.Vertices.Add(new BiggaVertex(+w2, -h2, -d2, 0, 0, -1, 1, 0, 0, 1, 1));
+        // Fill in the back face vertex data.
+        meshData.Vertices.Add(new BiggaVertex(-w2, -h2, +d2, 0, 0, 1, -1, 0, 0, 1, 1));
+        meshData.Vertices.Add(new BiggaVertex(+w2, -h2, +d2, 0, 0, 1, -1, 0, 0, 0, 1));
+        meshData.Vertices.Add(new BiggaVertex(+w2, +h2, +d2, 0, 0, 1, -1, 0, 0, 0, 0));
+        meshData.Vertices.Add(new BiggaVertex(-w2, +h2, +d2, 0, 0, 1, -1, 0, 0, 1, 0));
+        // Fill in the top face vertex data.
+        meshData.Vertices.Add(new BiggaVertex(-w2, +h2, -d2, 0, 1, 0, 1, 0, 0, 0, 1));
+        meshData.Vertices.Add(new BiggaVertex(-w2, +h2, +d2, 0, 1, 0, 1, 0, 0, 0, 0));
+        meshData.Vertices.Add(new BiggaVertex(+w2, +h2, +d2, 0, 1, 0, 1, 0, 0, 1, 0));
+        meshData.Vertices.Add(new BiggaVertex(+w2, +h2, -d2, 0, 1, 0, 1, 0, 0, 1, 1));
+        // Fill in the bottom face vertex data.
+        meshData.Vertices.Add(new BiggaVertex(-w2, -h2, -d2, 0, -1, 0, -1, 0, 0, 1, 1));
+        meshData.Vertices.Add(new BiggaVertex(+w2, -h2, -d2, 0, -1, 0, -1, 0, 0, 0, 1));
+        meshData.Vertices.Add(new BiggaVertex(+w2, -h2, +d2, 0, -1, 0, -1, 0, 0, 0, 0));
+        meshData.Vertices.Add(new BiggaVertex(-w2, -h2, +d2, 0, -1, 0, -1, 0, 0, 1, 0));
+        // Fill in the left face vertex data.
+        meshData.Vertices.Add(new BiggaVertex(-w2, -h2, +d2, -1, 0, 0, 0, 0, -1, 0, 1));
+        meshData.Vertices.Add(new BiggaVertex(-w2, +h2, +d2, -1, 0, 0, 0, 0, -1, 0, 0));
+        meshData.Vertices.Add(new BiggaVertex(-w2, +h2, -d2, -1, 0, 0, 0, 0, -1, 1, 0));
+        meshData.Vertices.Add(new BiggaVertex(-w2, -h2, -d2, -1, 0, 0, 0, 0, -1, 1, 1));
+        // Fill in the right face vertex data.
+        meshData.Vertices.Add(new BiggaVertex(+w2, -h2, -d2, 1, 0, 0, 0, 0, 1, 0, 1));
+        meshData.Vertices.Add(new BiggaVertex(+w2, +h2, -d2, 1, 0, 0, 0, 0, 1, 0, 0));
+        meshData.Vertices.Add(new BiggaVertex(+w2, +h2, +d2, 1, 0, 0, 0, 0, 1, 1, 0));
+        meshData.Vertices.Add(new BiggaVertex(+w2, -h2, +d2, 1, 0, 0, 0, 0, 1, 1, 1));
+
+        //
+        // Create the indices.
+        //
+
+        meshData.Indices32.AddRange(new[]
+        {
+            // Fill in the front face index data.
+            0, 1, 2, 0, 2, 3,
+            // Fill in the back face index data.
+            4, 5, 6, 4, 6, 7,
+            // Fill in the top face index data.
+            8, 9, 10, 8, 10, 11,
+            // Fill in the bottom face index data.
+            12, 13, 14, 12, 14, 15,
+            // Fill in the left face index data
+            16, 17, 18, 16, 18, 19,
+            // Fill in the right face index data
+            20, 21, 22, 20, 22, 23
+        });
+
+        // Put a cap on the number of subdivisions.
+        numSubdivisions = Math.Min(numSubdivisions, 6);
+
+        for (int i = 0; i < numSubdivisions; ++i)
+            Subdivide(meshData);
+
+        return meshData;
+    }
+
+
     public static MeshData CreateGeosphere(float radius, int numSubdivisions)
     {
         var meshData = new MeshData();
@@ -292,7 +421,7 @@ public static class GeometryGenerator
         }
 
     //TODO:
-    public static SubmeshGeometry AppendMeshData(MeshData meshData, Color color, List<SmallaVertex> vertices, List<int> indices)
+    public static SubmeshGeometry AppendMeshData(MeshData meshData, List<SmallaVertex> vertices, List<int> indices)
     {
         // Определяем SubmeshGeometry которая описывает часть буфера вершин/индексов, содержащую подгеометрию
 
@@ -307,7 +436,7 @@ public static class GeometryGenerator
         vertices.AddRange(meshData.Vertices.Select(vertex => new SmallaVertex()
         {
             Pos = vertex.Position,
-            Color = color.ToVector4()
+            Normal = vertex.Normal,
         }));
         indices.AddRange(meshData.Indices32);
 

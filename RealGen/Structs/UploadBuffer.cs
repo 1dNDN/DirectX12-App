@@ -7,7 +7,7 @@ using SharpDX.Direct3D12;
 
 namespace RealGen;
 
-internal class UploadBuffer<T> : IDisposable where T : struct
+public class UploadBuffer<T> : IDisposable where T : struct
 {
     private readonly int _elementByteSize;
     private readonly IntPtr _resourcePointer;

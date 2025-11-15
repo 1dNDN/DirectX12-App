@@ -37,5 +37,5 @@ public struct BiggaVertex
 public struct SmallaVertex
 {
     public Vector3 Pos;
-    public Vector4 Color;
+    public Vector3 Normal;
 }

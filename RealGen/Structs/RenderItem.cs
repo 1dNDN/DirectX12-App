@@ -27,6 +27,11 @@ public class RenderItem
     public int ObjCBIndex { get; set; } = -1;
 
     /// <summary>
+    /// Материал объекта
+    /// </summary>
+    public Material Mat { get; set; }
+
+    /// <summary>
     /// Геометрия объекта
     /// </summary>
     public MeshGeometry Geo { get; set; }
