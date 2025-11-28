@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows.Forms;
@@ -501,26 +502,25 @@ public class BaseDirectXWindow : BaseWindow
     }
 
     /// <inheritdoc />
-    protected override void Dispose(bool disposing)
+    public override void Dispose()
     {
-        if (disposing)
-        {
-            FlushCommandQueue();
+        FlushCommandQueue();
 
-            RenderRtvHeap?.Dispose();
-            RenderDsvHeap?.Dispose();
-            RenderSwapChain?.Dispose();
-            foreach (var buffer in _swapChainBuffers)
-                 buffer?.Dispose();
-            DepthStencilBuffer?.Dispose();
-            RenderCommandList?.Dispose();
-            RenderDirectCmdListAlloc?.Dispose();
-            RenderCommandQueue?.Dispose();
-            RenderFence?.Dispose();
-            RenderDevice?.Dispose();
-        }
+        RenderRtvHeap?.Dispose();
+        RenderDsvHeap?.Dispose();
+        RenderSwapChain?.Dispose();
+        foreach (var buffer in _swapChainBuffers)
+             buffer?.Dispose();
+        DepthStencilBuffer?.Dispose();
+        RenderCommandList?.Dispose();
+        RenderDirectCmdListAlloc?.Dispose();
+        RenderCommandQueue?.Dispose();
+        RenderFence?.Dispose();
+        RenderDevice?.Dispose();
 
-        base.Dispose(disposing);
+        GC.SuppressFinalize(this);
+
+        base.Dispose();
     }
 
     private int _frameCount;

@@ -7,11 +7,21 @@ using SharpDX.Direct3D12;
 
 namespace RealGen;
 
+/// <summary>
+/// Буфер для передачи данных на GPU
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public class UploadBuffer<T> : IDisposable where T : struct
 {
     private readonly int _elementByteSize;
     private readonly IntPtr _resourcePointer;
 
+    /// <summary>
+    /// Конструктор буфера для передачи данных на гпу
+    /// </summary>
+    /// <param name="device"></param>
+    /// <param name="elementCount"></param>
+    /// <param name="isConstantBuffer"></param>
     public UploadBuffer(Device device, int elementCount, bool isConstantBuffer)
     {
         // Constant buffer elements need to be multiples of 256 bytes.
@@ -37,11 +47,20 @@ public class UploadBuffer<T> : IDisposable where T : struct
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
     }
 
+    /// <summary>
+    /// Ресурс буфера
+    /// </summary>
     public Resource Resource { get; }
 
+    /// <summary>
+    /// Копирует данные из памяти в ресурс буфера
+    /// </summary>
+    /// <param name="elementIndex">Индекс данных в буфере</param>
+    /// <param name="data">Данные для передачи</param>
     public void CopyData(int elementIndex, ref T data) =>
         Marshal.StructureToPtr(data, _resourcePointer + elementIndex * _elementByteSize, true);
 
+    /// <inheritdoc />
     public void Dispose()
     {
         Resource.Unmap(0);

@@ -9,14 +9,20 @@ using SharpDX;
 
 namespace RealGen.Unifiers;
 
+/// <summary>
+/// Класс для импорта моделей в формате STL
+/// </summary>
 public static class STLReader
 {
+    /// <summary>
+    /// Импортирует только геометрию
+    /// </summary>
+    /// <param name="filePath">Путь до модели</param>
+    /// <returns>Геометрия объекта</returns>
     public static MeshData Import(string filePath)
     {
         if (!File.Exists(filePath))
             throw new Exception($"Skill issue, file {filePath} not found");
-
-        var index = 0;
 
         using var reader = new BinaryReader(File.Open(filePath, FileMode.Open));
         // Read 80-byte header
@@ -51,7 +57,7 @@ public static class STLReader
 
         var mesh = new MeshData();
         mesh.Vertices.AddRange(vertices);
-        mesh.Indices32.AddRange(indices);
+        mesh.Indices.AddRange(indices);
 
         return mesh;
     }

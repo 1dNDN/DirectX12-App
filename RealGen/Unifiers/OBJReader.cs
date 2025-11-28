@@ -9,13 +9,20 @@ using SharpDX;
 
 namespace RealGen.Unifiers;
 
-public class OBJReader
+/// <summary>
+/// Класс для импорта моделей в формате OBJ/MTL
+/// </summary>
+public static class OBJReader
 {
-    public static MeshData Import(string filePath)
+    /// <summary>
+    /// Импортирует только геометрию
+    /// </summary>
+    /// <param name="objPath">Путь до объекта</param>
+    /// <returns>Геометрия объекта</returns>
+    public static MeshData Import(string objPath)
     {
         var obj = new ObjModel();
-        obj.Load(filePath);
-
+        obj.Load(objPath);
 
         var mesh = new MeshData();
 
@@ -36,7 +43,7 @@ public class OBJReader
 
         foreach (var face in obj.Faces)
         foreach (var index in face.VertexIndexList)
-            mesh.Indices32.Add(index - 1);
+            mesh.Indices.Add(index - 1);
 
         return mesh;
     }

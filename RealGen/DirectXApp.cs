@@ -52,6 +52,11 @@ public class DirectXApp : BaseDirectXWindow
     private Dictionary<string, Material> Materials { get; set; } = new();
 
     /// <summary>
+    /// Текстуры для геометрий сцены
+    /// </summary>
+    private readonly Dictionary<string, Texture> Textures = new();
+
+    /// <summary>
     /// Байткод скомпилированного вертексного шейдера
     /// </summary>
     private ShaderBytecode VertexShaderByteCode { get; set; }
@@ -100,7 +105,7 @@ public class DirectXApp : BaseDirectXWindow
     /// <summary>
     /// Рисовать ли полигоны в виде сетки или как настоящие. True - в виде сетки, False - как настоящие
     /// </summary>
-    protected bool IsWireframe = true;
+    protected bool IsWireframe = false;
 
     private Vector3 EyePosition;
 
@@ -121,6 +126,7 @@ public class DirectXApp : BaseDirectXWindow
 
         RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
 
+        BuildTextures();
         BuildRootSignature();
         BuildShadersAndInputLayout();
         BuildShapesAndGeometry();
@@ -304,10 +310,10 @@ public class DirectXApp : BaseDirectXWindow
         MainPassConstantBuffer.TotalTime = timer.TotalTime;
         MainPassConstantBuffer.DeltaTime = timer.DeltaTime;
         MainPassConstantBuffer.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
-        MainPassConstantBuffer.Lights[0].Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
+        MainPassConstantBuffer.Lights[0].Direction = new Vector3(0.57735f, 0.57735f, 0.57735f);
         MainPassConstantBuffer.Lights[0].Strength = new Vector3(0.6f);
         MainPassConstantBuffer.Lights[1].Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
-        MainPassConstantBuffer.Lights[1].Strength = new Vector3(0.3f);
+        MainPassConstantBuffer.Lights[1].Strength = new Vector3(0.2f);
         MainPassConstantBuffer.Lights[2].Direction = new Vector3(0.0f, -0.707f, -0.707f);
         MainPassConstantBuffer.Lights[2].Strength = new Vector3(0.15f);
 
@@ -357,7 +363,7 @@ public class DirectXApp : BaseDirectXWindow
     protected override void OnKeyDown(Keys keyCode)
     {
         if (keyCode == Keys.D1)
-            IsWireframe = false;
+            IsWireframe = true;
 
         var dx = 0.1f;
 
@@ -384,7 +390,7 @@ public class DirectXApp : BaseDirectXWindow
     {
         base.OnKeyUp(keyCode);
         if (keyCode == Keys.D1)
-            IsWireframe = true;
+            IsWireframe = false;
     }
 
     /// <inheritdoc />
@@ -475,6 +481,11 @@ public class DirectXApp : BaseDirectXWindow
     //     }
     // }
 
+    private void BuildTextures()
+    {
+        // var
+    }
+
     private void BuildRootSignature()
     {
         // Shader programs typically require resources as input (constant buffers,
@@ -518,7 +529,7 @@ public class DirectXApp : BaseDirectXWindow
 
     private void BuildShapesAndGeometry()
     {
-        var vertices = new List<SmallaVertex>();
+        var vertices = new List<BiggaVertex>();
         var indices = new List<int>();
 
         var box = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateBox(1.5f, 0.5f, 1.5f, 3), vertices, indices);
@@ -588,6 +599,15 @@ public class DirectXApp : BaseDirectXWindow
             FresnelR0 = new Vector3(0.05f),
             Roughness = 0.3f
         });
+        AddMaterial(new Material
+        {
+            Name = "big_dragon",
+            MaterialCBIndex = 4,
+            DiffuseSrvHeapIndex = 4,
+            DiffuseAlbedo = Color.PaleGreen.ToVector4(),
+            FresnelR0 = new Vector3(0.5f),
+            Roughness = 0.9f
+        });
     }
 
     private void AddMaterial(Material mat) => Materials[mat.Name] = mat;
@@ -598,7 +618,15 @@ public class DirectXApp : BaseDirectXWindow
     {
         var itemIndex = 0;
 
-        AddRenderItem(RenderLayer.Opaque, itemIndex++, "jenjinaMat", "baseGeometry", "jenjina", Matrix.Translation(0.0f, 0.5f, 0.0f) * Matrix.Scaling(2.0F) * Matrix.RotationYawPitchRoll(0.0F, 0.0f, -1.0f));
+        AddRenderItem(RenderLayer.Opaque, itemIndex++, "jenjinaMat", "baseGeometry", "jenjina",
+            Matrix.Translation(0.0f, 0.0f, 0.0f) *
+            Matrix.Scaling(4.0F) *
+            Matrix.RotationYawPitchRoll(0.0F, -float.Pi/2, float.Pi));
+
+        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "big_dragon", "baseGeometry", "big_dragon",
+        //     Matrix.Translation(0.0f, 0.0f, 0.0f) *
+        //     Matrix.Scaling(2.0F) *
+        //     Matrix.RotationYawPitchRoll(0.0F, -float.Pi/2, float.Pi));
 
         // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(0.0f, 0.5f, 0.0f) * huiTranslation);
         // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(2.0f, 0.5f, 0.0f) * huiTranslation);
@@ -677,20 +705,19 @@ public class DirectXApp : BaseDirectXWindow
     }
 
     /// <inheritdoc />
-    protected override void Dispose(bool disposing)
+    public override void Dispose()
     {
-        if (disposing)
-        {
-            RenderRootSignature?.Dispose();
-            CbvHeap?.Dispose();
-            foreach (var frameResource in Frames)
-                frameResource.Dispose();
-            foreach (var geometry in Geometries.Values)
-                geometry.Dispose();
-            foreach (var pso in PSOs.Values)
-                pso.Dispose();
-        }
+        RenderRootSignature?.Dispose();
+        CbvHeap?.Dispose();
+        foreach (var frameResource in Frames)
+            frameResource.Dispose();
+        foreach (var geometry in Geometries.Values)
+            geometry.Dispose();
+        foreach (var pso in PSOs.Values)
+            pso.Dispose();
 
-        base.Dispose(disposing);
+        GC.SuppressFinalize(this);
+
+        base.Dispose();
     }
 }

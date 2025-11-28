@@ -12,13 +12,20 @@ public class Material
     /// </summary>
     public string Name { get; set; }
 
-    // Index into constant buffer corresponding to this material.
+    /// <summary>
+    /// Индекс константного буфера для материала
+    /// </summary>
     public int MaterialCBIndex { get; set; } = -1;
 
-    // Index into SRV heap for diffuse texture.
+    /// <summary>
+    /// Индекс кучи ресурса шейдеров для текстуры диффузного освещения
+    /// </summary>
     public int DiffuseSrvHeapIndex { get; set; } = -1;
 
-    // Index into SRV heap for normal texture.
+
+    /// <summary>
+    /// Индекс кучи ресурса шейдеров для текстуры карты нормалей
+    /// </summary>
     public int NormalSrvHeapIndex { get; set; } = -1;
 
     /// <summary>

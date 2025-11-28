@@ -4,40 +4,67 @@ using SharpDX;
 
 namespace RealGen.Utils;
 
+/// <summary>
+/// Обёртки над математикой
+/// </summary>
 public static class MathHelper
 {
     private static readonly Random _random = new();
 
+    /// <summary>
+    /// Случайное целое число в диапазоне
+    /// </summary>
+    /// <param name="minValue"></param>
+    /// <param name="maxValue"></param>
+    /// <returns></returns>
     public static int Rand(int minValue, int maxValue) =>
         _random.Next(minValue, maxValue);
 
+    /// <summary>
+    /// Случайное дробное число между 0.0 и 1.0
+    /// </summary>
+    /// <returns></returns>
     public static float Randf() =>
         _random.NextFloat(0.0f, 1.0f);
 
+    /// <summary>
+    /// Случайное дробное число в диапазоне
+    /// </summary>
+    /// <param name="minValue"></param>
+    /// <param name="maxValue"></param>
+    /// <returns></returns>
     public static float Randf(float minValue, float maxValue) =>
         _random.NextFloat(minValue, maxValue);
 
+    /// <inheritdoc cref="Math.Sin"/>
     public static float Sinf(double a) =>
         (float)Math.Sin(a);
 
+    /// <inheritdoc cref="Math.Cos"/>
     public static float Cosf(double d) =>
         (float)Math.Cos(d);
 
+    /// <inheritdoc cref="Math.Tan"/>
     public static float Tanf(double a) =>
         (float)Math.Tan(a);
 
+    /// <inheritdoc cref="Math.Atan"/>
     public static float Atanf(double d) =>
         (float)Math.Atan(d);
 
+    /// <inheritdoc cref="Math.Atan2"/>
     public static float Atan2f(double y, double x) =>
         (float)Math.Atan2(y, x);
 
+    /// <inheritdoc cref="Math.Acos"/>
     public static float Acosf(double d) =>
         (float)Math.Acos(d);
 
+    /// <inheritdoc cref="Math.Exp"/>
     public static float Expf(double d) =>
         (float)Math.Exp(d);
 
+    /// <inheritdoc cref="Math.Sqrt"/>
     public static float Sqrtf(double d) =>
         (float)Math.Sqrt(d);
 }

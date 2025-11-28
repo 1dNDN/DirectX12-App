@@ -50,13 +50,13 @@ public static class GeometryGenerator
         {
             for (int j = 0; j < n - 1; j++)
             {
-                meshData.Indices32.Add(i * n + j);
-                meshData.Indices32.Add(i * n + j + 1);
-                meshData.Indices32.Add((i + 1) * n + j);
+                meshData.Indices.Add(i * n + j);
+                meshData.Indices.Add(i * n + j + 1);
+                meshData.Indices.Add((i + 1) * n + j);
 
-                meshData.Indices32.Add((i + 1) * n + j);
-                meshData.Indices32.Add(i * n + j + 1);
-                meshData.Indices32.Add((i + 1) * n + j + 1);
+                meshData.Indices.Add((i + 1) * n + j);
+                meshData.Indices.Add(i * n + j + 1);
+                meshData.Indices.Add((i + 1) * n + j + 1);
             }
         }
 
@@ -111,7 +111,7 @@ public static class GeometryGenerator
         // Create the indices.
         //
 
-        meshData.Indices32.AddRange(new[]
+        meshData.Indices.AddRange(new[]
         {
             // Fill in the front face index data.
             0, 1, 2, 0, 2, 3,
@@ -136,82 +136,15 @@ public static class GeometryGenerator
         return meshData;
     }
 
-
-    public static MeshData CreateGeosphere(float radius, int numSubdivisions)
-    {
-        var meshData = new MeshData();
-
-        // Put a cap on the number of subdivisions.
-        numSubdivisions = Math.Min(numSubdivisions, 6);
-
-        // Approximate a sphere by tesselating an icosahedron.
-
-        const float x = 0.525731f;
-        const float z = 0.850651f;
-
-        Vector3[] positions =
-        {
-            new(-x, 0, z), new(x, 0, z),
-            new(-x, 0, -z), new(x, 0, -z),
-            new(0, z, x), new(0, z, -x),
-            new(0, -z, x), new(0, -z, -x),
-            new(z, x, 0), new(-z, x, 0),
-            new(z, -x, 0), new(-z, -x, 0)
-        };
-
-        int[] indices =
-        {
-            1,4,0, 4,9,0, 4,5,9, 8,5,4, 1,8,4,
-            1,10,8, 10,3,8, 8,3,5, 3,2,5, 3,7,2,
-            3,10,7, 10,6,7, 6,11,7, 6,0,11, 6,1,0,
-            10,1,6, 11,0,9, 2,11,9, 5,2,9, 11,2,7
-        };
-
-        meshData.Vertices.AddRange(positions.Select(position => new BiggaVertex { Position = position }));
-        meshData.Indices32.AddRange(indices);
-
-        for (var i = 0; i < numSubdivisions; i++)
-            Subdivide(meshData);
-
-        // Project vertices onto sphere and scale.
-        for (var i = 0; i < positions.Length; i++)
-        {
-            // Project onto unit sphere.
-            var normal = Vector3.Normalize(positions[i]);
-
-            // Project onto sphere.
-            var position = radius * normal;
-
-            // Derive texture coordinates from spherical coordinates.
-            var theta = MathHelper.Atan2f(positions[i].Z, positions[i].X) + MathUtil.Pi;
-
-            var phi = MathHelper.Acosf(positions[i].Y / radius);
-
-            var texCoord = new Vector2(
-                theta / MathUtil.TwoPi,
-                phi / MathUtil.TwoPi);
-
-            // Partial derivative of P with respect to theta.
-            var tangentU = new Vector3(
-                -radius * MathHelper.Sinf(phi) * MathHelper.Sinf(theta),
-                0.0f,
-                radius * MathHelper.Sinf(phi) * MathHelper.Cosf(theta));
-
-            meshData.Vertices.Add(new BiggaVertex(position, normal, tangentU, texCoord));
-        }
-
-        return meshData;
-    }
-
     //TODO:
     private static void Subdivide(MeshData meshData)
     {
         // Save a copy of the input geometry.
         var verticesCopy = meshData.Vertices.ToArray();
-        var indicesCopy = meshData.Indices32.ToArray();
+        var indicesCopy = meshData.Indices.ToArray();
 
         meshData.Vertices.Clear();
-        meshData.Indices32.Clear();
+        meshData.Indices.Clear();
 
         //       v1
         //       *
@@ -249,21 +182,21 @@ public static class GeometryGenerator
             meshData.Vertices.Add(m1); // 4
             meshData.Vertices.Add(m2); // 5
 
-            meshData.Indices32.Add(i * 6 + 0);
-            meshData.Indices32.Add(i * 6 + 3);
-            meshData.Indices32.Add(i * 6 + 5);
+            meshData.Indices.Add(i * 6 + 0);
+            meshData.Indices.Add(i * 6 + 3);
+            meshData.Indices.Add(i * 6 + 5);
 
-            meshData.Indices32.Add(i * 6 + 3);
-            meshData.Indices32.Add(i * 6 + 4);
-            meshData.Indices32.Add(i * 6 + 5);
+            meshData.Indices.Add(i * 6 + 3);
+            meshData.Indices.Add(i * 6 + 4);
+            meshData.Indices.Add(i * 6 + 5);
 
-            meshData.Indices32.Add(i * 6 + 5);
-            meshData.Indices32.Add(i * 6 + 4);
-            meshData.Indices32.Add(i * 6 + 2);
+            meshData.Indices.Add(i * 6 + 5);
+            meshData.Indices.Add(i * 6 + 4);
+            meshData.Indices.Add(i * 6 + 2);
 
-            meshData.Indices32.Add(i * 6 + 3);
-            meshData.Indices32.Add(i * 6 + 1);
-            meshData.Indices32.Add(i * 6 + 4);
+            meshData.Indices.Add(i * 6 + 3);
+            meshData.Indices.Add(i * 6 + 1);
+            meshData.Indices.Add(i * 6 + 4);
         }
     }
     //TODO:
@@ -274,7 +207,7 @@ public static class GeometryGenerator
         var pos = 0.5f * (v0.Position + v1.Position);
         var normal = Vector3.Normalize(0.5f * (v0.Normal + v1.Normal));
         var tangent = Vector3.Normalize(0.5f * (v0.TangentU + v1.TangentU));
-        var tex = 0.5f * (v0.TexC + v1.TexC);
+        var tex = 0.5f * (v0.TextureCoordinate + v1.TextureCoordinate);
 
         return new BiggaVertex(pos, normal, tangent, tex);
     }
@@ -336,13 +269,13 @@ public static class GeometryGenerator
             {
                 for (var j = 0; j < sliceCount; j++)
                 {
-                    meshData.Indices32.Add(i * ringVertexCount + j);
-                    meshData.Indices32.Add((i + 1) * ringVertexCount + j);
-                    meshData.Indices32.Add((i + 1) * ringVertexCount + j + 1);
+                    meshData.Indices.Add(i * ringVertexCount + j);
+                    meshData.Indices.Add((i + 1) * ringVertexCount + j);
+                    meshData.Indices.Add((i + 1) * ringVertexCount + j + 1);
 
-                    meshData.Indices32.Add(i * ringVertexCount + j);
-                    meshData.Indices32.Add((i + 1) * ringVertexCount + j + 1);
-                    meshData.Indices32.Add(i * ringVertexCount + j + 1);
+                    meshData.Indices.Add(i * ringVertexCount + j);
+                    meshData.Indices.Add((i + 1) * ringVertexCount + j + 1);
+                    meshData.Indices.Add(i * ringVertexCount + j + 1);
                 }
             }
         }
@@ -379,9 +312,9 @@ public static class GeometryGenerator
 
             for (var i = 0; i < sliceCount; i++)
             {
-                meshData.Indices32.Add(centerIndex);
-                meshData.Indices32.Add(baseIndex + i + 1);
-                meshData.Indices32.Add(baseIndex + i);
+                meshData.Indices.Add(centerIndex);
+                meshData.Indices.Add(baseIndex + i + 1);
+                meshData.Indices.Add(baseIndex + i);
             }
         }
 
@@ -414,31 +347,27 @@ public static class GeometryGenerator
 
             for (var i = 0; i < sliceCount; i++)
             {
-                meshData.Indices32.Add(baseIndex + i);
-                meshData.Indices32.Add(baseIndex + i + 1);
-                meshData.Indices32.Add(centerIndex);
+                meshData.Indices.Add(baseIndex + i);
+                meshData.Indices.Add(baseIndex + i + 1);
+                meshData.Indices.Add(centerIndex);
             }
         }
 
     //TODO:
-    public static SubmeshGeometry AppendMeshData(MeshData meshData, List<SmallaVertex> vertices, List<int> indices)
+    public static SubmeshGeometry AppendMeshData(MeshData meshData, List<BiggaVertex> vertices, List<int> indices)
     {
         // Определяем SubmeshGeometry которая описывает часть буфера вершин/индексов, содержащую подгеометрию
 
         var submesh = new SubmeshGeometry
         {
-            IndexCount = meshData.Indices32.Count,
+            IndexCount = meshData.Indices.Count,
             StartIndexLocation = indices.Count,
             BaseVertexLocation = vertices.Count,
             World = meshData.NormalizedWorld,
         };
 
-        vertices.AddRange(meshData.Vertices.Select(vertex => new SmallaVertex()
-        {
-            Pos = vertex.Position,
-            Normal = vertex.Normal,
-        }));
-        indices.AddRange(meshData.Indices32);
+        vertices.AddRange(meshData.Vertices);
+        indices.AddRange(meshData.Indices);
 
         return submesh;
     }
@@ -501,9 +430,9 @@ public static class GeometryGenerator
 
         for (var i = 1; i <= sliceCount; i++)
         {
-            meshData.Indices32.Add(0);
-            meshData.Indices32.Add(i + 1);
-            meshData.Indices32.Add(i);
+            meshData.Indices.Add(0);
+            meshData.Indices.Add(i + 1);
+            meshData.Indices.Add(i);
         }
 
         //
@@ -516,13 +445,13 @@ public static class GeometryGenerator
         {
             for (var j = 0; j < sliceCount; j++)
             {
-                meshData.Indices32.Add(baseIndex + i * ringVertexCount + j);
-                meshData.Indices32.Add(baseIndex + i * ringVertexCount + j + 1);
-                meshData.Indices32.Add(baseIndex + (i + 1) * ringVertexCount + j);
+                meshData.Indices.Add(baseIndex + i * ringVertexCount + j);
+                meshData.Indices.Add(baseIndex + i * ringVertexCount + j + 1);
+                meshData.Indices.Add(baseIndex + (i + 1) * ringVertexCount + j);
 
-                meshData.Indices32.Add(baseIndex + (i + 1) * ringVertexCount + j);
-                meshData.Indices32.Add(baseIndex + i * ringVertexCount + j + 1);
-                meshData.Indices32.Add(baseIndex + (i + 1) * ringVertexCount + j + 1);
+                meshData.Indices.Add(baseIndex + (i + 1) * ringVertexCount + j);
+                meshData.Indices.Add(baseIndex + i * ringVertexCount + j + 1);
+                meshData.Indices.Add(baseIndex + (i + 1) * ringVertexCount + j + 1);
             }
         }
 
@@ -539,9 +468,9 @@ public static class GeometryGenerator
 
         for (var i = 0; i < sliceCount; i++)
         {
-            meshData.Indices32.Add(southPoleIndex);
-            meshData.Indices32.Add(baseIndex + i);
-            meshData.Indices32.Add(baseIndex + i + 1);
+            meshData.Indices.Add(southPoleIndex);
+            meshData.Indices.Add(baseIndex + i);
+            meshData.Indices.Add(baseIndex + i + 1);
         }
         return meshData;
     }

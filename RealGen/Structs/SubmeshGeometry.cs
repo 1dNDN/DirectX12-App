@@ -8,11 +8,24 @@ namespace RealGen;
 /// </summary>
 public class SubmeshGeometry
 {
-    //TODO:
+    /// <summary>
+    /// Количество индексов подгеометрии
+    /// </summary>
     public int IndexCount { get; set; }
+
+    /// <summary>
+    /// Место, где начинаются индексы подгеометрии в буфере
+    /// </summary>
     public int StartIndexLocation { get; set; }
+
+    /// <summary>
+    /// Место, где начинаются вертексы геометрии в буфере
+    /// </summary>
     public int BaseVertexLocation { get; set; }
 
+    /// <summary>
+    /// Матрица мира подгеометрии
+    /// </summary>
     public Matrix World { get; set; } = Matrix.Identity;
 
 }

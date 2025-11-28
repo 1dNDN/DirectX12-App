@@ -5,8 +5,21 @@ using SharpDX.Direct3D12;
 
 namespace RealGen.Utils;
 
+/// <summary>
+/// Методы для работы с буферами
+/// </summary>
 public static class BufferUtil
 {
+    /// <summary>
+    /// Создаёт буфер для передачи данных в GPU
+    /// </summary>
+    /// <param name="device"></param>
+    /// <param name="cmdList"></param>
+    /// <param name="initData"></param>
+    /// <param name="byteSize"></param>
+    /// <param name="uploadBuffer"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public static Resource CreateDefaultBuffer<T>(
         Device device,
         GraphicsCommandList cmdList,

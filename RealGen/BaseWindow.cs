@@ -61,6 +61,9 @@ public class BaseWindow : IDisposable
     /// </summary>
     public bool Resizing { get; private set; }
 
+    /// <summary>
+    /// Часы рендеринга
+    /// </summary>
     public GameTimer Timer { get; } = new GameTimer();
 
     /// <summary>
@@ -99,6 +102,11 @@ public class BaseWindow : IDisposable
         Window.Update();
     }
 
+    /// <summary>
+    /// Событие на изменение размера окна
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     protected virtual void OnWindowOnResize(object sender, EventArgs e)
     {
         Width = Window.ClientSize.Width;
@@ -156,24 +164,47 @@ public class BaseWindow : IDisposable
         }
     }
 
+    /// <summary>
+    /// Событие на нажатие кнопки мыши
+    /// </summary>
+    /// <param name="button"></param>
+    /// <param name="location"></param>
     protected virtual void OnMouseDown(MouseButtons button, Point location)
     {
         Window.Capture = true;
     }
 
+    /// <summary>
+    /// Событие на отпускание кнопки мыши
+    /// </summary>
+    /// <param name="button"></param>
+    /// <param name="location"></param>
     protected virtual void OnMouseUp(MouseButtons button, Point location)
     {
         Window.Capture = false;
     }
 
+    /// <summary>
+    /// Событие на движение мыши
+    /// </summary>
+    /// <param name="button"></param>
+    /// <param name="location"></param>
     protected virtual void OnMouseMove(MouseButtons button, Point location)
     {
     }
 
+    /// <summary>
+    /// Событие на нажатие кнопки клавиатуры
+    /// </summary>
+    /// <param name="keyCode"></param>
     protected virtual void OnKeyDown(Keys keyCode)
     {
     }
 
+    /// <summary>
+    /// Событие на отпускание кнопки клавиатуры
+    /// </summary>
+    /// <param name="keyCode"></param>
     protected virtual void OnKeyUp(Keys keyCode)
     {
         switch (keyCode)
@@ -184,6 +215,11 @@ public class BaseWindow : IDisposable
         }
     }
 
+    /// <summary>
+    /// Событие на начало изменения размера окна
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     protected virtual void OnWindowOnResizeBegin(object sender, EventArgs e)
     {
         AppPaused = true;
@@ -191,6 +227,11 @@ public class BaseWindow : IDisposable
         Timer.Stop();
     }
 
+    /// <summary>
+    /// Событие на конец изменения размера окна
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     protected virtual void OnWindowOnResizeEnd(object sender, EventArgs e)
     {
         AppPaused = false;
@@ -198,34 +239,47 @@ public class BaseWindow : IDisposable
         Timer.Start();
         OnResizeInternal();
     }
+
+    /// <summary>
+    /// Событие на активацию окна из кода
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     protected virtual void OnWindowOnActivated(object sender, EventArgs e)
     {
         AppPaused = false;
         Timer.Start();
     }
 
+    /// <summary>
+    /// Событие на деактивацию окна из кода
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     protected virtual void OnWindowOnDeactivate(object sender, EventArgs e)
     {
         AppPaused = true;
         Timer.Stop();
     }
 
+    /// <summary>
+    /// Событие на уничтожение окна
+    /// </summary>
     protected virtual void OnHandleDestroyed()
     {
         Running = false;
     }
 
+    /// <summary>
+    /// Внутренняя логика на событие изменения размера окна. Пересчёт буферов и всё такое
+    /// </summary>
     protected virtual void OnResizeInternal()
     {
     }
 
-    public void Dispose()
+    /// <inheritdoc />
+    public virtual void Dispose()
     {
-        Dispose(true);
         GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
     }
 }

@@ -3,6 +3,9 @@ using SharpDX.Direct3D;
 
 namespace RealGen;
 
+/// <summary>
+/// Класс объекта, описывающего один объект для рендеринга
+/// </summary>
 public class RenderItem
 {
     /// <summary>
@@ -41,9 +44,18 @@ public class RenderItem
     /// </summary>
     public PrimitiveTopology PrimitiveType { get; set; } = PrimitiveTopology.TriangleList;
 
-    //TODO:
-    // // DrawIndexedInstanced parameters.
+    /// <summary>
+    /// Количество индексов геометрии
+    /// </summary>
     public int IndexCount { get; set; }
+
+    /// <summary>
+    /// Место, где начинаются индексы геометрии в буфере
+    /// </summary>
     public int StartIndexLocation { get; set; }
+
+    /// <summary>
+    /// Место, где начинаются вертексы геометрии в буфере
+    /// </summary>
     public int BaseVertexLocation { get; set; }
 }
