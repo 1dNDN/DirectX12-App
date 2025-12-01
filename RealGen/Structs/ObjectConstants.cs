@@ -8,5 +8,6 @@ namespace RealGen
     internal struct ObjectConstants
     {
         public Matrix World;
+        public Matrix TexTransform;
     }
 }

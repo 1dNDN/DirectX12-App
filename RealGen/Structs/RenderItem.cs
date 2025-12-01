@@ -13,6 +13,8 @@ public class RenderItem
     /// </summary>
     public Matrix World { get; set; } = Matrix.Identity;
 
+    public Matrix TexTransform { get; set; } = Matrix.Identity;
+
     // Dirty flag indicating the object data has changed and we need to update the constant buffer.
     // Because we have an object cbuffer for each FrameResource, we have to apply the
     // update to each FrameResource. Thus, when we modify obect data we should set

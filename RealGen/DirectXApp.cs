@@ -21,6 +21,11 @@ public class DirectXApp : BaseDirectXWindow
     protected DescriptorHeap CbvHeap { get; set; }
 
     /// <summary>
+    /// Куча для дескрипторов Shader Resource View
+    /// </summary>
+    protected DescriptorHeap SRVDescriptorHeap { get; set; }
+
+    /// <summary>
     /// Список куч с дескрипторами буферов
     /// </summary>
     protected DescriptorHeap[] DescriptorHeaps { get; set; }
@@ -128,12 +133,12 @@ public class DirectXApp : BaseDirectXWindow
 
         BuildTextures();
         BuildRootSignature();
+        BuildDescriptorHeaps();
         BuildShadersAndInputLayout();
         BuildShapesAndGeometry();
         BuildMaterials();
         BuildRenderItems();
         BuildFrameResources();
-        // BuildDescriptorHeaps();
         // BuildConstantBufferViews();
         BuildPSOs();
 
@@ -170,6 +175,8 @@ public class DirectXApp : BaseDirectXWindow
 
         // Specify the buffers we are going to render to.
         RenderCommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
+
+        RenderCommandList.SetDescriptorHeaps(1, DescriptorHeaps);
 
         RenderCommandList.SetGraphicsRootSignature(RenderRootSignature);
 
@@ -258,6 +265,7 @@ public class DirectXApp : BaseDirectXWindow
                 var objConstants = new ObjectConstants
                 {
                     World = Matrix.Transpose(e.World),
+                    TexTransform = Matrix.Transpose(e.TexTransform)
                 };
                 CurrentFrameResource.ObjectConstantBuffer.CopyData(e.ObjCBIndex, ref objConstants);
 
@@ -279,6 +287,7 @@ public class DirectXApp : BaseDirectXWindow
                     DiffuseAlbedo = mat.DiffuseAlbedo,
                     FresnelR0 = mat.FresnelR0,
                     Roughness = mat.Roughness,
+                    MatTransform = Matrix.Transpose(mat.MatTransform),
                 };
 
                 CurrentFrameResource.MaterialConstantBuffer.CopyData(mat.MaterialCBIndex, ref matConstants);
@@ -342,7 +351,7 @@ public class DirectXApp : BaseDirectXWindow
             _phi += dy;
 
             // Ограничиваем зенитный угол
-            _phi = MathUtil.Clamp(_phi, 0.1f, MathUtil.Pi - 0.1f);
+            // _phi = MathUtil.Clamp(_phi, 0.1f, MathUtil.Pi - 0.1f);
         }
         else if ((button & MouseButtons.Right) != 0)
         {
@@ -353,7 +362,7 @@ public class DirectXApp : BaseDirectXWindow
             _radius += dx - dy;
 
             // Ограничиваем радиус
-            _radius = MathUtil.Clamp(_radius, 3.0f, 15.0f);
+            // _radius = MathUtil.Clamp(_radius, 3.0f, 15.0f);
         }
 
         _lastMousePos = location;
@@ -381,7 +390,7 @@ public class DirectXApp : BaseDirectXWindow
         if (keyCode == Keys.Down)
             _phi -= dy;
 
-        _phi = MathUtil.Clamp(_phi, 0.1f, MathUtil.Pi - 0.1f);
+        // _phi = MathUtil.Clamp(_phi, 0.1f, MathUtil.Pi - 0.1f);
 
     }
 
@@ -405,27 +414,35 @@ public class DirectXApp : BaseDirectXWindow
     /// <summary>
     /// Создаёт кучу с дескрипторами
     /// </summary>
-    // private void BuildDescriptorHeaps()
-    // {
-    //     var objCount = SceneItems.Count;
-    //
-    //     // Need a CBV descriptor for each object for each frame resource,
-    //     // +1 for the perPass CBV for each frame resource.
-    //     var numDescriptors = (objCount + 1) * NumFrameResources;
-    //
-    //     // Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
-    //     _passCbvOffset = objCount * NumFrameResources;
-    //
-    //     var cbvHeapDesc = new DescriptorHeapDescription
-    //     {
-    //         DescriptorCount = numDescriptors,
-    //         Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
-    //         Flags = DescriptorHeapFlags.ShaderVisible,
-    //         NodeMask = 0,
-    //     };
-    //     CbvHeap = RenderDevice.CreateDescriptorHeap(cbvHeapDesc);
-    //     DescriptorHeaps = [CbvHeap];
-    // }
+    private void BuildDescriptorHeaps()
+    {
+        var srvHeapDesc = new DescriptorHeapDescription
+        {
+            DescriptorCount = 1,
+            Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
+            Flags = DescriptorHeapFlags.ShaderVisible
+        };
+        SRVDescriptorHeap = RenderDevice.CreateDescriptorHeap(srvHeapDesc);
+        DescriptorHeaps = [SRVDescriptorHeap];
+
+        var descriptorHandle = SRVDescriptorHeap.CPUDescriptorHandleForHeapStart;
+        var texture = Textures["duck"].Resource;
+
+        var srvDescription = new ShaderResourceViewDescription()
+        {
+            Shader4ComponentMapping = TextureUtil.DefaultShader4ComponentMapping,
+            Format = texture.Description.Format,
+            Dimension = ShaderResourceViewDimension.Texture2D,
+            Texture2D = new ShaderResourceViewDescription.Texture2DResource
+            {
+                MostDetailedMip = 0,
+                MipLevels = texture.Description.MipLevels,
+                ResourceMinLODClamp = 0.0f,
+            },
+        };
+
+        RenderDevice.CreateShaderResourceView(texture, srvDescription, descriptorHandle);
+    }
 
     // private void BuildConstantBufferViews()
     // {
@@ -483,7 +500,15 @@ public class DirectXApp : BaseDirectXWindow
 
     private void BuildTextures()
     {
-        // var
+        var (texture, sampler) = GLTFReader.ImportTexture("./Models/Duck/glTF-Embedded/Duck.gltf");
+        var boxTexture = new Texture()
+        {
+            Name = "duck",
+        };
+
+        boxTexture.Resource = TextureUtil.CreateTextureFromPNG(RenderDevice, texture);
+        Textures[boxTexture.Name] = boxTexture;
+
     }
 
     private void BuildRootSignature()
@@ -496,6 +521,8 @@ public class DirectXApp : BaseDirectXWindow
 
         // Root parameter can be a table, root descriptor or root constants.
 
+        var textureTable = new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0);
+
         // Create a single descriptor table of CBVs.
         var descriptor1 = new RootDescriptor(0, 0);
         var descriptor2 = new RootDescriptor(1, 0);
@@ -504,14 +531,68 @@ public class DirectXApp : BaseDirectXWindow
         // A root signature is an array of root parameters.
         var slotRootParameters = new[]
         {
+            new RootParameter(ShaderVisibility.Pixel, textureTable),
             new RootParameter(ShaderVisibility.Vertex, descriptor1, RootParameterType.ConstantBufferView),
-            new RootParameter(ShaderVisibility.Pixel, descriptor2, RootParameterType.ConstantBufferView),
+            new RootParameter(ShaderVisibility.All, descriptor2, RootParameterType.ConstantBufferView),
             new RootParameter(ShaderVisibility.All, descriptor3, RootParameterType.ConstantBufferView)
         };
 
-        var rootSigDesc = new RootSignatureDescription(RootSignatureFlags.AllowInputAssemblerInputLayout, slotRootParameters);
+        var rootSigDesc = new RootSignatureDescription(
+            RootSignatureFlags.AllowInputAssemblerInputLayout,
+            slotRootParameters,
+            GetStaticSamplers());
 
         RenderRootSignature = RenderDevice.CreateRootSignature(rootSigDesc.Serialize());
+    }
+
+    private StaticSamplerDescription[] GetStaticSamplers()
+    {
+        // Applications usually only need a handful of samplers. So just define them all up front
+        // and keep them available as part of the root signature.
+
+        return
+        [
+            // PointWrap
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
+            {
+                Filter = Filter.MinMagMipPoint,
+                AddressUVW = TextureAddressMode.Wrap
+            },
+            // PointClamp
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
+            {
+                Filter = Filter.MinMagMipPoint,
+                AddressUVW = TextureAddressMode.Clamp
+            },
+            // LinearWrap
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
+            {
+                Filter = Filter.MinMagMipLinear,
+                AddressUVW = TextureAddressMode.Wrap
+            },
+            // LinearClamp
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
+            {
+                Filter = Filter.MinMagMipLinear,
+                AddressUVW = TextureAddressMode.Clamp
+            },
+            // AnisotropicWrap
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
+            {
+                Filter = Filter.Anisotropic,
+                AddressUVW = TextureAddressMode.Wrap,
+                MipLODBias = 0.0f,
+                MaxAnisotropy = 8
+            },
+            // AnisotropicClamp
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
+            {
+                Filter = Filter.Anisotropic,
+                AddressUVW = TextureAddressMode.Clamp,
+                MipLODBias = 0.0f,
+                MaxAnisotropy = 8
+            },
+        ];
     }
 
 
@@ -523,7 +604,9 @@ public class DirectXApp : BaseDirectXWindow
         ShaderInputLayout = new InputLayoutDescription(
         [
             new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
-            new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0)
+            new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
+            new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
+            new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0)
         ]);
     }
 
@@ -537,6 +620,8 @@ public class DirectXApp : BaseDirectXWindow
         var sphere = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateSphere(0.5f, 20, 20), vertices, indices);
         var cylinder = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.5f, 3.0f, 20, 20), vertices, indices);
         var jenjina = GeometryGenerator.AppendMeshData(OBJReader.Import("./Models/jenjina.obj"), vertices, indices);
+        var superbox = GeometryGenerator.AppendMeshData(GLTFReader.ImportGeometry("./Models/BoxTextured/glTF-Embedded/BoxTextured.gltf"), vertices, indices);
+        var duck = GeometryGenerator.AppendMeshData(GLTFReader.ImportGeometry("./Models/Duck/glTF-Embedded/Duck.gltf"), vertices, indices);
 
         var bigDragon = GeometryGenerator.AppendMeshData(STLReader.Import("./Models/big_dragon.stl"), vertices, indices);
 
@@ -547,6 +632,8 @@ public class DirectXApp : BaseDirectXWindow
         geo.DrawArgs["sphere"] = sphere;
         geo.DrawArgs["cylinder"] = cylinder;
         geo.DrawArgs["jenjina"] = jenjina;
+        geo.DrawArgs["superbox"] = superbox;
+        geo.DrawArgs["duck"] = duck;
         geo.DrawArgs["big_dragon"] = bigDragon;
 
         Geometries[geo.Name] = geo;
@@ -563,51 +650,71 @@ public class DirectXApp : BaseDirectXWindow
 
     private void BuildMaterials()
     {
+        // AddMaterial(new Material
+        // {
+        //     Name = "bricks0",
+        //     MaterialCBIndex = 0,
+        //     DiffuseSrvHeapIndex = 0,
+        //     DiffuseAlbedo = Color.ForestGreen.ToVector4(),
+        //     FresnelR0 = new Vector3(0.02f),
+        //     Roughness = 0.1f
+        // });
+        // AddMaterial(new Material
+        // {
+        //     Name = "stone0",
+        //     MaterialCBIndex = 1,
+        //     DiffuseSrvHeapIndex = 1,
+        //     DiffuseAlbedo = Color.LightSteelBlue.ToVector4(),
+        //     FresnelR0 = new Vector3(0.05f),
+        //     Roughness = 0.3f
+        // });
+        // AddMaterial(new Material
+        // {
+        //     Name = "tile0",
+        //     MaterialCBIndex = 2,
+        //     DiffuseSrvHeapIndex = 2,
+        //     DiffuseAlbedo = Color.LightGray.ToVector4(),
+        //     FresnelR0 = new Vector3(0.02f),
+        //     Roughness = 0.2f
+        // });
+        // AddMaterial(new Material
+        // {
+        //     Name = "jenjinaMat",
+        //     MaterialCBIndex = 3,
+        //     DiffuseSrvHeapIndex = 3,
+        //     DiffuseAlbedo = Color.BlueViolet.ToVector4(),
+        //     FresnelR0 = new Vector3(0.05f),
+        //     Roughness = 0.3f
+        // });
+        // AddMaterial(new Material
+        // {
+        //     Name = "superbox",
+        //     MaterialCBIndex = 4,
+        //     DiffuseSrvHeapIndex = 4,
+        //     DiffuseAlbedo = Color.PaleGreen.ToVector4(),
+        //     FresnelR0 = new Vector3(0.5f),
+        //     Roughness = 0.9f
+        // });
+        // AddMaterial(new Material
+        // {
+        //     Name = "big_dragon",
+        //     MaterialCBIndex = 5,
+        //     DiffuseSrvHeapIndex = 5,
+        //     DiffuseAlbedo = Color.PaleGreen.ToVector4(),
+        //     FresnelR0 = new Vector3(0.5f),
+        //     Roughness = 0.9f
+        // });
+
         AddMaterial(new Material
         {
-            Name = "bricks0",
+            Name = "duck",
             MaterialCBIndex = 0,
             DiffuseSrvHeapIndex = 0,
-            DiffuseAlbedo = Color.ForestGreen.ToVector4(),
-            FresnelR0 = new Vector3(0.02f),
-            Roughness = 0.1f
-        });
-        AddMaterial(new Material
-        {
-            Name = "stone0",
-            MaterialCBIndex = 1,
-            DiffuseSrvHeapIndex = 1,
-            DiffuseAlbedo = Color.LightSteelBlue.ToVector4(),
+            DiffuseAlbedo = Color.White.ToVector4(),
             FresnelR0 = new Vector3(0.05f),
-            Roughness = 0.3f
-        });
-        AddMaterial(new Material
-        {
-            Name = "tile0",
-            MaterialCBIndex = 2,
-            DiffuseSrvHeapIndex = 2,
-            DiffuseAlbedo = Color.LightGray.ToVector4(),
-            FresnelR0 = new Vector3(0.02f),
             Roughness = 0.2f
         });
-        AddMaterial(new Material
-        {
-            Name = "jenjinaMat",
-            MaterialCBIndex = 3,
-            DiffuseSrvHeapIndex = 3,
-            DiffuseAlbedo = Color.BlueViolet.ToVector4(),
-            FresnelR0 = new Vector3(0.05f),
-            Roughness = 0.3f
-        });
-        AddMaterial(new Material
-        {
-            Name = "big_dragon",
-            MaterialCBIndex = 4,
-            DiffuseSrvHeapIndex = 4,
-            DiffuseAlbedo = Color.PaleGreen.ToVector4(),
-            FresnelR0 = new Vector3(0.5f),
-            Roughness = 0.9f
-        });
+
     }
 
     private void AddMaterial(Material mat) => Materials[mat.Name] = mat;
@@ -618,10 +725,16 @@ public class DirectXApp : BaseDirectXWindow
     {
         var itemIndex = 0;
 
-        AddRenderItem(RenderLayer.Opaque, itemIndex++, "jenjinaMat", "baseGeometry", "jenjina",
+        AddRenderItem(RenderLayer.Opaque, itemIndex++, "duck", "baseGeometry", "duck",
             Matrix.Translation(0.0f, 0.0f, 0.0f) *
-            Matrix.Scaling(4.0F) *
+            Matrix.Scaling(1.0F) *
             Matrix.RotationYawPitchRoll(0.0F, -float.Pi/2, float.Pi));
+
+
+        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "jenjinaMat", "baseGeometry", "jenjina",
+        //     Matrix.Translation(0.0f, 0.0f, 0.0f) *
+        //     Matrix.Scaling(4.0F) *
+        //     Matrix.RotationYawPitchRoll(0.0F, -float.Pi/2, float.Pi));
 
         // AddRenderItem(RenderLayer.Opaque, itemIndex++, "big_dragon", "baseGeometry", "big_dragon",
         //     Matrix.Translation(0.0f, 0.0f, 0.0f) *
@@ -667,11 +780,14 @@ public class DirectXApp : BaseDirectXWindow
             cmdList.SetIndexBuffer(item.Geo.IndexBufferView);
             cmdList.PrimitiveTopology = item.PrimitiveType;
 
+            var textureHandle = SRVDescriptorHeap.GPUDescriptorHandleForHeapStart + item.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
+
             var objectCBAddress = objectCB.GPUVirtualAddress + item.ObjCBIndex * objectCBSizeBytes;
             var materialCBAddress = materialCB.GPUVirtualAddress + item.Mat.MaterialCBIndex * materialCBSizeBytes;
 
-            cmdList.SetGraphicsRootConstantBufferView(0, objectCBAddress);
-            cmdList.SetGraphicsRootConstantBufferView(1, materialCBAddress);
+            cmdList.SetGraphicsRootDescriptorTable(0, textureHandle);
+            cmdList.SetGraphicsRootConstantBufferView(1, objectCBAddress);
+            cmdList.SetGraphicsRootConstantBufferView(3, materialCBAddress);
 
             cmdList.DrawIndexedInstanced(item.IndexCount, 1, item.StartIndexLocation, item.BaseVertexLocation, 0);
         }
@@ -707,12 +823,15 @@ public class DirectXApp : BaseDirectXWindow
     /// <inheritdoc />
     public override void Dispose()
     {
+        SRVDescriptorHeap?.Dispose();
         RenderRootSignature?.Dispose();
         CbvHeap?.Dispose();
         foreach (var frameResource in Frames)
             frameResource.Dispose();
         foreach (var geometry in Geometries.Values)
             geometry.Dispose();
+        foreach (var texture in Textures.Values)
+            texture.Dispose();
         foreach (var pso in PSOs.Values)
             pso.Dispose();
 
