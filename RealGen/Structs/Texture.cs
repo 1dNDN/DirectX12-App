@@ -15,11 +15,6 @@ public class Texture : IDisposable
     public string Name { get; set; }
 
     /// <summary>
-    /// Название файла с текстурой
-    /// </summary>
-    public string Filename { get; set; }
-
-    /// <summary>
     /// Собсна сама текстурка как ресурс
     /// </summary>
     public Resource Resource { get; set; }

@@ -2,17 +2,17 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<UseWindowsForms>true</UseWindowsForms>
-		<RootNamespace>04-InitDirect3D</RootNamespace>
+		<RootNamespace>RealGen</RootNamespace>
 		<TargetFramework>net8.0-windows</TargetFramework>
 	</PropertyGroup>
 	<ItemGroup>
-	  <PackageReference Include="glTF2Loader" Version="1.0.0" />
 	  <PackageReference Include="ObjParser" Version="0.1.0" />
 	  <PackageReference Include="SharpDX" Version="4.0.1" />
 	  <PackageReference Include="SharpDX.D3DCompiler" Version="4.0.1" />
 	  <PackageReference Include="SharpDX.Direct3D12" Version="4.0.1" />
 	  <PackageReference Include="SharpDX.DXGI" Version="4.0.1" />
 	  <PackageReference Include="SharpDX.Mathematics" Version="4.0.1" />
+	  <PackageReference Include="SharpGLTF.Core" Version="1.0.5" />
 	</ItemGroup>
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

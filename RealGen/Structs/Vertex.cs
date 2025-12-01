@@ -21,14 +21,15 @@ public struct BiggaVertex
     public Vector3 Normal;
 
     /// <summary>
+    /// Координаты вертекса на текстуре
+    /// </summary>
+    public Vector2 TextureCoordinate;
+
+    /// <summary>
     /// Касательная вертекса
     /// </summary>
     public Vector3 TangentU;
 
-    /// <summary>
-    /// Координаты вертекса на текстуре
-    /// </summary>
-    public Vector2 TextureCoordinate;
 
     /// <summary>
     /// Конструктор вертекса для передачи в шейдер
@@ -41,7 +42,7 @@ public struct BiggaVertex
     {
         Position = position;
         Normal = normal;
-        TangentU = tangentU;
+        // TangentU = tangentU;
         TextureCoordinate = textureCoordinate;
     }
 
