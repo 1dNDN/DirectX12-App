@@ -27,7 +27,7 @@ public class MeshGeometry : IDisposable
     /// <summary>
     ///     Имя геометрии
     /// </summary>
-    public string Name { get; set; }
+    public GeometryEnum Name { get; set; }
 
     /// <summary>
     ///     Размер вершины в байтах
@@ -98,7 +98,7 @@ public class MeshGeometry : IDisposable
     /// MeshGeometry может хранить несколько разных геометрий в одном буфере индексов и вертексов.
     /// Для того чтобы отрисовывать Submesh, нужно использовать этот словарь.
     /// </summary>
-    public Dictionary<string, SubmeshGeometry> DrawArgs { get; } = new Dictionary<string, SubmeshGeometry>();
+    public Dictionary<MeshEnum, SubmeshGeometry> DrawArgs { get; } = new Dictionary<MeshEnum, SubmeshGeometry>();
 
 
     /// <summary>
@@ -117,7 +117,7 @@ public class MeshGeometry : IDisposable
         GraphicsCommandList commandList,
         IEnumerable<TVertex> vertices,
         IEnumerable<TIndex> indices,
-        string name = "Default")
+        GeometryEnum name)
         where TVertex : struct
         where TIndex : struct
     {

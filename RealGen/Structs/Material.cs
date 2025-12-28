@@ -10,7 +10,7 @@ public class Material
     /// <summary>
     /// Уникальное имя материала для поиска
     /// </summary>
-    public string Name { get; set; }
+    public MaterialsEnum Name { get; set; }
 
     /// <summary>
     /// Индекс константного буфера для материала

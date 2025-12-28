@@ -2,5 +2,7 @@ namespace RealGen;
 
 public enum RenderLayer
 {
-    Opaque
+    Opaque,
+    Transparent,
+    AlphaTested
 }

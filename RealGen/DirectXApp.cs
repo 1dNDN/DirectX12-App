@@ -4,15 +4,22 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Windows.Forms;
 
+using RealGen.AssetServices;
 using RealGen.Unifiers;
 using RealGen.Utils;
 
 using SharpDX;
+using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 
+using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimension;
+
 namespace RealGen;
 
+/// <summary>
+/// Окошко, в котором всё делаем
+/// </summary>
 public class DirectXApp : BaseDirectXWindow
 {
     /// <summary>
@@ -49,17 +56,17 @@ public class DirectXApp : BaseDirectXWindow
     /// <summary>
     /// Геометрии для сцены
     /// </summary>
-    protected readonly Dictionary<string, MeshGeometry> Geometries = new();
+    protected readonly Dictionary<GeometryEnum, MeshGeometry> Geometries = new();
 
     /// <summary>
     /// Материалы для геометрий сцены
     /// </summary>
-    private Dictionary<string, Material> Materials { get; set; } = new();
+    private Dictionary<MaterialsEnum, Material> Materials { get; set; } = new();
 
     /// <summary>
     /// Текстуры для геометрий сцены
     /// </summary>
-    private readonly Dictionary<string, Texture> Textures = new();
+    private readonly Dictionary<TexturesEnum, Texture> Textures = new();
 
     /// <summary>
     /// Байткод скомпилированного вертексного шейдера
@@ -72,9 +79,14 @@ public class DirectXApp : BaseDirectXWindow
     private ShaderBytecode PixelShaderByteCode { get; set; }
 
     /// <summary>
+    /// Байткод скомпилированного пиксельного шейдера
+    /// </summary>
+    private ShaderBytecode PixelAlphatestdShaderByteCode { get; set; }
+
+    /// <summary>
     /// Состояния графического пайплайна
     /// </summary>
-    protected readonly Dictionary<string, PipelineState> PSOs = new();
+    protected readonly Dictionary<PSOEnum, PipelineState> PSOs = new();
 
     /// <summary>
     /// Список всех объектов геометрии сцены
@@ -103,9 +115,6 @@ public class DirectXApp : BaseDirectXWindow
     /// Буфер констант, привязанных к кадру (например, матрица камеры), с которым мы непосредственно работаем
     /// </summary>
     protected PassConstants MainPassConstantBuffer = PassConstants.Default;
-
-    //TODO:
-    protected int _passCbvOffset;
 
     /// <summary>
     /// Рисовать ли полигоны в виде сетки или как настоящие. True - в виде сетки, False - как настоящие
@@ -153,14 +162,13 @@ public class DirectXApp : BaseDirectXWindow
     {
         CommandAllocator cmdListAlloc = CurrentFrameResource.CmdListAlloc;
 
-
         // Reuse the memory associated with command recording.
         // We can only reset when the associated command lists have finished execution on the GPU.
         cmdListAlloc.Reset();
 
         // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
         // Reusing the command list reuses memory.
-        RenderCommandList.Reset(cmdListAlloc, IsWireframe ? PSOs["opaque_wireframe"] : PSOs["opaque"]);
+        RenderCommandList.Reset(cmdListAlloc, IsWireframe ? PSOs[PSOEnum.OpaqueWireframe] : PSOs[PSOEnum.Opaque]);
 
         // Set the viewport and scissor rect. This needs to be reset whenever the command list is reset.
         RenderCommandList.SetViewport(RenderViewport);
@@ -176,7 +184,7 @@ public class DirectXApp : BaseDirectXWindow
         // Specify the buffers we are going to render to.
         RenderCommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
-        RenderCommandList.SetDescriptorHeaps(1, DescriptorHeaps);
+        RenderCommandList.SetDescriptorHeaps(DescriptorHeaps.Length, DescriptorHeaps);
 
         RenderCommandList.SetGraphicsRootSignature(RenderRootSignature);
 
@@ -184,6 +192,12 @@ public class DirectXApp : BaseDirectXWindow
         RenderCommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
 
         DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.Opaque]);
+
+        RenderCommandList.PipelineState = PSOs[PSOEnum.AlphaTested];
+        DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.AlphaTested]);
+
+        RenderCommandList.PipelineState = PSOs[PSOEnum.Transparent];
+        DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.Transparent]);
 
         // Indicate a state transition on the resource usage.
         RenderCommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -416,9 +430,10 @@ public class DirectXApp : BaseDirectXWindow
     /// </summary>
     private void BuildDescriptorHeaps()
     {
+        //TODO
         var srvHeapDesc = new DescriptorHeapDescription
         {
-            DescriptorCount = 1,
+            DescriptorCount = Textures.Count,
             Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
             Flags = DescriptorHeapFlags.ShaderVisible
         };
@@ -426,22 +441,28 @@ public class DirectXApp : BaseDirectXWindow
         DescriptorHeaps = [SRVDescriptorHeap];
 
         var descriptorHandle = SRVDescriptorHeap.CPUDescriptorHandleForHeapStart;
-        var texture = Textures["duck"].Resource;
-
         var srvDescription = new ShaderResourceViewDescription()
         {
             Shader4ComponentMapping = TextureUtil.DefaultShader4ComponentMapping,
-            Format = texture.Description.Format,
             Dimension = ShaderResourceViewDimension.Texture2D,
             Texture2D = new ShaderResourceViewDescription.Texture2DResource
             {
                 MostDetailedMip = 0,
-                MipLevels = texture.Description.MipLevels,
                 ResourceMinLODClamp = 0.0f,
             },
         };
 
-        RenderDevice.CreateShaderResourceView(texture, srvDescription, descriptorHandle);
+        foreach (var texture in Textures.Values)
+        {
+            var resource = texture.Resource;
+            srvDescription.Format = resource.Description.Format;
+            srvDescription.Texture2D.MipLevels = resource.Description.MipLevels;
+
+            RenderDevice.CreateShaderResourceView(resource, srvDescription, descriptorHandle);
+
+            descriptorHandle += CbvSrvUavDescriptorSize;
+        }
+
     }
 
     // private void BuildConstantBufferViews()
@@ -500,15 +521,30 @@ public class DirectXApp : BaseDirectXWindow
 
     private void BuildTextures()
     {
-        var (texture, sampler) = GLTFReader.ImportTexture("./Models/Duck/glTF-Embedded/Duck.gltf");
-        var boxTexture = new Texture()
+        AddGltfTexture(TexturesEnum.Duck, "./Models/Duck/glTF-Embedded/Duck.gltf");
+        AddDdsTexture(TexturesEnum.Semitransparent, "./Models/DDSTextures/water1.dds");
+        AddDdsTexture(TexturesEnum.Fence, "./Models/DDSTextures/WireFence.dds");
+    }
+
+    void AddGltfTexture(TexturesEnum name, string path)
+    {
+        var (img, sampler) = GLTFReader.ImportTexture(path);
+        var texture = new Texture
         {
-            Name = "duck",
+            Resource = TextureUtil.CreateTextureFromPNG(this.RenderDevice, img),
         };
 
-        boxTexture.Resource = TextureUtil.CreateTextureFromPNG(RenderDevice, texture);
-        Textures[boxTexture.Name] = boxTexture;
+        Textures[name] = texture;
+    }
 
+    private void AddDdsTexture(TexturesEnum name, string path)
+    {
+        var texture = new Texture
+        {
+            Resource = DDSReader.ImportTexture(this.RenderDevice, path),
+        };
+
+        Textures[name] = texture;
     }
 
     private void BuildRootSignature()
@@ -598,16 +634,27 @@ public class DirectXApp : BaseDirectXWindow
 
     private void BuildShadersAndInputLayout()
     {
-        VertexShaderByteCode = ShaderUtil.CompileShader("Shaders/vertex.hlsl", "VS", "vs_5_0");
-        PixelShaderByteCode = ShaderUtil.CompileShader("Shaders/pixel.hlsl", "PS", "ps_5_0");
+        ShaderMacro[] defines =
+        {
+            new ShaderMacro("FOG", "0")
+        };
 
-        ShaderInputLayout = new InputLayoutDescription(
-        [
+        ShaderMacro[] alphaTestDefines =
+        {
+            new ShaderMacro("FOG", "0"),
+            new ShaderMacro("ALPHA_TEST", "1")
+        };
+
+        VertexShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0");
+        PixelShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", defines);
+        PixelAlphatestdShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
+
+        ShaderInputLayout = new InputLayoutDescription(new[]
+        {
             new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
             new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
-            new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
-            new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0)
-        ]);
+            new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0)
+        });
     }
 
     private void BuildShapesAndGeometry()
@@ -625,18 +672,28 @@ public class DirectXApp : BaseDirectXWindow
 
         var bigDragon = GeometryGenerator.AppendMeshData(STLReader.Import("./Models/big_dragon.stl"), vertices, indices);
 
-        var geo = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), "baseGeometry");
+        var geo = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), GeometryEnum.Duck);
 
-        geo.DrawArgs["box"] = box;
-        geo.DrawArgs["grid"] = grid;
-        geo.DrawArgs["sphere"] = sphere;
-        geo.DrawArgs["cylinder"] = cylinder;
-        geo.DrawArgs["jenjina"] = jenjina;
-        geo.DrawArgs["superbox"] = superbox;
-        geo.DrawArgs["duck"] = duck;
-        geo.DrawArgs["big_dragon"] = bigDragon;
+        geo.DrawArgs[MeshEnum.Box] = box;
+        geo.DrawArgs[MeshEnum.Grid] = grid;
+        geo.DrawArgs[MeshEnum.Sphere] = sphere;
+        geo.DrawArgs[MeshEnum.Cylinder] = cylinder;
+        geo.DrawArgs[MeshEnum.Jenjina] = jenjina;
+        geo.DrawArgs[MeshEnum.Superbox] = superbox;
+        geo.DrawArgs[MeshEnum.Duck] = duck;
+        geo.DrawArgs[MeshEnum.BigDragon] = bigDragon;
 
         Geometries[geo.Name] = geo;
+
+        var geo2 = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), GeometryEnum.Fence);
+
+        geo2.DrawArgs[MeshEnum.Box] = box;
+        Geometries[geo2.Name] = geo2;
+
+        var geo3 = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), GeometryEnum.Semitransparent);
+
+        geo3.DrawArgs[MeshEnum.Grid] = grid;
+        Geometries[geo3.Name] = geo3;
     }
 
     private void BuildFrameResources()
@@ -648,6 +705,7 @@ public class DirectXApp : BaseDirectXWindow
         }
     }
 
+    [SuppressMessage("ReSharper", "RedundantAssignment")]
     private void BuildMaterials()
     {
         // AddMaterial(new Material
@@ -705,19 +763,46 @@ public class DirectXApp : BaseDirectXWindow
         //     Roughness = 0.9f
         // });
 
-        AddMaterial(new Material
-        {
-            Name = "duck",
-            MaterialCBIndex = 0,
-            DiffuseSrvHeapIndex = 0,
-            DiffuseAlbedo = Color.White.ToVector4(),
-            FresnelR0 = new Vector3(0.05f),
-            Roughness = 0.2f
-        });
+        var materialIndex = 0;
+        AddMaterial(
+            new Material
+            {
+                Name = MaterialsEnum.Duck,
+                DiffuseAlbedo = Color.White.ToVector4(),
+                FresnelR0 = new Vector3(0.05f),
+                Roughness = 0.2f,
+            },
+            ref materialIndex);
 
+        AddMaterial(
+            new Material
+            {
+                Name = MaterialsEnum.Semitransparent,
+                DiffuseAlbedo = new Vector4(1.0f, 1.0f, 1.0f, 0.5f),
+                FresnelR0 = new Vector3(0.1f),
+                Roughness = 0.0f,
+            },
+            ref materialIndex);
+
+        AddMaterial(
+            new Material
+            {
+                Name = MaterialsEnum.Fence,
+                DiffuseAlbedo = new Vector4(1.0f),
+                FresnelR0 = new Vector3(0.1f),
+                Roughness = 0.25f,
+            },
+            ref materialIndex);
     }
 
-    private void AddMaterial(Material mat) => Materials[mat.Name] = mat;
+    private void AddMaterial(Material mat, ref int materialIndex)
+    {
+        mat.MaterialCBIndex = materialIndex;
+        mat.DiffuseSrvHeapIndex = materialIndex;
+        Materials[mat.Name] = mat;
+
+        materialIndex++;
+    }
 
 
     [SuppressMessage("ReSharper", "RedundantAssignment")]
@@ -725,11 +810,31 @@ public class DirectXApp : BaseDirectXWindow
     {
         var itemIndex = 0;
 
-        AddRenderItem(RenderLayer.Opaque, itemIndex++, "duck", "baseGeometry", "duck",
+        AddRenderItem(
+            RenderLayer.Opaque,
+            ref itemIndex,
+            MaterialsEnum.Duck,
+            GeometryEnum.Duck,
+            MeshEnum.Duck,
             Matrix.Translation(0.0f, 0.0f, 0.0f) *
             Matrix.Scaling(1.0F) *
             Matrix.RotationYawPitchRoll(0.0F, -float.Pi/2, float.Pi));
 
+        AddRenderItem(
+            RenderLayer.Transparent,
+            ref itemIndex,
+            MaterialsEnum.Semitransparent,
+            GeometryEnum.Semitransparent,
+            MeshEnum.Grid,
+            Matrix.Translation(0.0F, 0.0F, 0.0F));
+
+        AddRenderItem(
+            RenderLayer.AlphaTested,
+            ref itemIndex,
+            MaterialsEnum.Fence,
+            GeometryEnum.Fence,
+            MeshEnum.Box,
+            Matrix.Translation(-3.0F, 0.0F, 0.0F));
 
         // AddRenderItem(RenderLayer.Opaque, itemIndex++, "jenjinaMat", "baseGeometry", "jenjina",
         //     Matrix.Translation(0.0f, 0.0f, 0.0f) *
@@ -747,7 +852,7 @@ public class DirectXApp : BaseDirectXWindow
         // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(1.0f, 3.0f, 0.0f) * huiTranslation);
     }
 
-    private void AddRenderItem(RenderLayer layer, int objConstantBufferIndex, string matName, string geoName, string submeshName, Matrix? world = null)
+    private void AddRenderItem(RenderLayer layer, ref int objConstantBufferIndex, MaterialsEnum matName, GeometryEnum geoName, MeshEnum submeshName, Matrix? world = null)
     {
         var geo = Geometries[geoName];
         var submesh = geo.DrawArgs[submeshName];
@@ -762,8 +867,12 @@ public class DirectXApp : BaseDirectXWindow
             Mat = Materials[matName],
         };
 
+        if (!SceneItemLayers.ContainsKey(layer))
+            SceneItemLayers[layer] = [];
+
         SceneItemLayers[layer].Add(renderItem);
         SceneItems.Add(renderItem);
+        objConstantBufferIndex++;
     }
 
     private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
@@ -812,12 +921,37 @@ public class DirectXApp : BaseDirectXWindow
         };
         opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-        PSOs["opaque"] = RenderDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+        PSOs[PSOEnum.Opaque] = RenderDevice.CreateGraphicsPipelineState(opaquePsoDesc);
 
-        var opaqueWireframePsoDesc = opaquePsoDesc;
+        var opaqueWireframePsoDesc = opaquePsoDesc.Copy();
         opaqueWireframePsoDesc.RasterizerState.FillMode = FillMode.Wireframe;
 
-        PSOs["opaque_wireframe"] = RenderDevice.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
+        PSOs[PSOEnum.OpaqueWireframe] = RenderDevice.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
+
+        var transparentPsoDesc = opaquePsoDesc.Copy();
+
+        var transparencyBlendDesc = new RenderTargetBlendDescription
+        {
+            IsBlendEnabled = true,
+            LogicOpEnable = false,
+            SourceBlend = BlendOption.SourceAlpha,
+            DestinationBlend = BlendOption.InverseSourceAlpha,
+            BlendOperation = BlendOperation.Add,
+            SourceAlphaBlend = BlendOption.One,
+            DestinationAlphaBlend = BlendOption.Zero,
+            AlphaBlendOperation = BlendOperation.Add,
+            LogicOp = LogicOperation.Noop,
+            RenderTargetWriteMask = ColorWriteMaskFlags.All
+        };
+        transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
+
+        PSOs[PSOEnum.Transparent] = RenderDevice.CreateGraphicsPipelineState(transparentPsoDesc);
+
+        var alphaTestedPsoDesc = opaquePsoDesc.Copy();
+        alphaTestedPsoDesc.PixelShader = PixelAlphatestdShaderByteCode;
+        alphaTestedPsoDesc.RasterizerState.CullMode = CullMode.None;
+
+        PSOs[PSOEnum.AlphaTested] = RenderDevice.CreateGraphicsPipelineState(alphaTestedPsoDesc);
     }
 
     /// <inheritdoc />

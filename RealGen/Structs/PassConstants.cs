@@ -23,6 +23,10 @@ public struct PassConstants
 
     public Vector4 AmbientLight;
 
+    public Vector4 FogColor;
+    public float FogStart;
+    public float FogRange;
+
     // Indices [0, NUM_DIR_LIGHTS) are directional lights;
     // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
@@ -41,6 +45,9 @@ public struct PassConstants
         NearZ = 1.0f,
         FarZ = 1000.0f,
         AmbientLight = Vector4.UnitW,
+        FogColor = new Vector4(0.7f, 0.7f, 0.7f, 1.0f),
+        FogStart = 5.0f,
+        FogRange = 150.0f,
         Lights = Light.DefaultArray
     };
 }

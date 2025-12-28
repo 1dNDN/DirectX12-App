@@ -10,11 +10,6 @@ namespace RealGen;
 public class Texture : IDisposable
 {
     /// <summary>
-    /// Уникальное имя текстуры для поиска
-    /// </summary>
-    public string Name { get; set; }
-
-    /// <summary>
     /// Собсна сама текстурка как ресурс
     /// </summary>
     public Resource Resource { get; set; }
