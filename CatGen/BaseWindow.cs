@@ -72,6 +72,11 @@ public class BaseWindow : IDisposable
     protected FormWindowState LastWindowState = FormWindowState.Normal;
 
     /// <summary>
+    /// Обновлять ли графику, когда приложение не в фокусе?
+    /// </summary>
+    public bool PauseOnLostFocus = false;
+
+    /// <summary>
     /// Инициализация
     /// </summary>
     public virtual void Init()
@@ -258,8 +263,11 @@ public class BaseWindow : IDisposable
     /// <param name="e"></param>
     protected virtual void OnWindowOnDeactivate(object sender, EventArgs e)
     {
-        AppPaused = true;
-        Timer.Stop();
+        if (PauseOnLostFocus)
+        {
+            AppPaused = true;
+            Timer.Stop();
+        }
     }
 
     /// <summary>

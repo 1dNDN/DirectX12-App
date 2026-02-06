@@ -124,10 +124,31 @@ public class DirectXApp : BaseDirectXWindow
     /// </summary>
     protected readonly Camera Camera = new();
 
+    /// <summary>
+    /// Сцена с объектами и всей хернёй, что мы рендерим.
+    /// </summary>
+    protected readonly SceneController Scene = new();
+
+    /// <summary>
+    /// Редактор сцены, чтобы не пересобирать каждый раз всё заново
+    /// </summary>
+    protected EditorForm Editor;
+
+    private Thread _editorThread;
+
     /// <inheritdoc />
+    [MemberNotNull(nameof(Editor))]
     public override void Init()
     {
         base.Init();
+
+        Editor = new EditorForm(this);
+        _editorThread = new Thread(() =>
+        {
+            Application.Run(new EditorForm(this));
+        });
+        _editorThread.SetApartmentState(ApartmentState.STA);
+        _editorThread.Start();
 
         RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
         Camera.Position = new Vector3(0.0f, 2.0f, -5.0f);
@@ -931,5 +952,10 @@ public class DirectXApp : BaseDirectXWindow
         GC.SuppressFinalize(this);
 
         base.Dispose();
+    }
+
+    public void AddModel(string path)
+    {
+        throw new NotImplementedException();
     }
 }
