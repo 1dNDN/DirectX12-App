@@ -17,21 +17,21 @@ public static class GeometryGenerator
         // Create the vertices.
         //
 
-        float halfWidth = 0.5f * width;
-        float halfDepth = 0.5f * depth;
+        var halfWidth = 0.5f * width;
+        var halfDepth = 0.5f * depth;
 
-        float dx = width / (n - 1);
-        float dz = depth / (m - 1);
+        var dx = width / (n - 1);
+        var dz = depth / (m - 1);
 
-        float du = 1f / (n - 1);
-        float dv = 1f / (m - 1);
+        var du = 1f / (n - 1);
+        var dv = 1f / (m - 1);
 
-        for (int i = 0; i < m; i++)
+        for (var i = 0; i < m; i++)
         {
-            float z = halfDepth - i * dz;
-            for (int j = 0; j < n; j++)
+            var z = halfDepth - i * dz;
+            for (var j = 0; j < n; j++)
             {
-                float x = -halfWidth + j * dx;
+                var x = -halfWidth + j * dx;
 
                 meshData.Vertices.Add(new BiggaVertex(
                     new Vector3(x, 0, z),
@@ -46,9 +46,9 @@ public static class GeometryGenerator
         //
 
         // Iterate over each quad and compute indices.
-        for (int i = 0; i < m - 1; i++)
+        for (var i = 0; i < m - 1; i++)
         {
-            for (int j = 0; j < n - 1; j++)
+            for (var j = 0; j < n - 1; j++)
             {
                 meshData.Indices.Add(i * n + j);
                 meshData.Indices.Add(i * n + j + 1);
@@ -130,7 +130,7 @@ public static class GeometryGenerator
         // Put a cap on the number of subdivisions.
         numSubdivisions = Math.Min(numSubdivisions, 6);
 
-        for (int i = 0; i < numSubdivisions; ++i)
+        for (var i = 0; i < numSubdivisions; ++i)
             Subdivide(meshData);
 
         return meshData;

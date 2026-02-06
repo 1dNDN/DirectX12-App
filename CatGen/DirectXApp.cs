@@ -119,17 +119,10 @@ public class DirectXApp : BaseDirectXWindow
     /// </summary>
     protected bool IsWireframe = false;
 
-    private Vector3 EyePosition;
-
     /// <summary>
-    /// Матрица проекции
+    /// Камера
     /// </summary>
-    protected Matrix Proj { get; set; } = Matrix.Identity;
-
-    /// <summary>
-    /// Матрица камеры
-    /// </summary>
-    protected Matrix View { get; set; } = Matrix.Identity;
+    protected readonly Camera Camera = new();
 
     /// <inheritdoc />
     public override void Init()
@@ -137,6 +130,7 @@ public class DirectXApp : BaseDirectXWindow
         base.Init();
 
         RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
+        Camera.Position = new Vector3(0.0f, 2.0f, -5.0f);
 
         BuildTextures();
         BuildRootSignature();
@@ -158,7 +152,7 @@ public class DirectXApp : BaseDirectXWindow
     /// <inheritdoc />
     protected override void Draw(GameTimer gameTimer)
     {
-        CommandAllocator cmdListAlloc = CurrentFrameResource.CmdListAlloc;
+        var cmdListAlloc = CurrentFrameResource.CmdListAlloc;
 
         // Reuse the memory associated with command recording.
         // We can only reset when the associated command lists have finished execution on the GPU.
@@ -218,21 +212,6 @@ public class DirectXApp : BaseDirectXWindow
         RenderCommandQueue.Signal(RenderFence, CurrentFence);
     }
 
-    /// <summary>
-    /// Азимутальный угол
-    /// </summary>
-    private float _theta = 1.5f * MathUtil.Pi;
-
-    /// <summary>
-    /// Зенитный угол
-    /// </summary>
-    private float _phi = MathUtil.PiOverFour;
-
-    /// <summary>
-    ///  Расстояние от камеры до начала координат
-    /// </summary>
-    private float _radius = 5.0f;
-
     /// <inheritdoc />
     protected override void Update(GameTimer timer)
     {
@@ -255,13 +234,25 @@ public class DirectXApp : BaseDirectXWindow
 
     private void UpdateCamera()
     {
-        // Конвертация сферических координат к декартовым.
-        var x = _radius * MathHelper.Sinf(_phi) * MathHelper.Cosf(_theta);
-        var z = _radius * MathHelper.Sinf(_phi) * MathHelper.Sinf(_theta);
-        var y = _radius * MathHelper.Cosf(_phi);
+        var dx = 10.0f;
+        var dt = Timer.DeltaTime;
 
-        // Вычисляем матрицу View
-        View = Matrix.LookAtLH(new Vector3(x, y, z), Vector3.Zero, Vector3.Up);
+        if (KeyboardUtil.IsKeyDown(Keys.LControlKey))
+            dx *= 3.0f;
+        if (KeyboardUtil.IsKeyDown(Keys.W))
+            Camera.Walk(dx * dt);
+        if (KeyboardUtil.IsKeyDown(Keys.S))
+            Camera.Walk(-dx * dt);
+        if (KeyboardUtil.IsKeyDown(Keys.A))
+            Camera.Strafe(-dx * dt);
+        if (KeyboardUtil.IsKeyDown(Keys.D))
+            Camera.Strafe(dx * dt);
+        if (KeyboardUtil.IsKeyDown(Keys.Space))
+            Camera.MoveUp(dx * dt);
+        if (KeyboardUtil.IsKeyDown(Keys.LShiftKey))
+            Camera.MoveUp(-dx * dt);
+
+        Camera.UpdateViewMatrix();
     }
 
     private void UpdateObjectCBs()
@@ -312,18 +303,21 @@ public class DirectXApp : BaseDirectXWindow
 
     private void UpdateMainPassCB(GameTimer timer)
     {
-        var viewProj = View * Proj;
-        var invView = Matrix.Invert(View);
-        var invProj = Matrix.Invert(Proj);
+        var view = Camera.View;
+        var proj = Camera.Proj;
+
+        var viewProj = view * proj;
+        var invView = Matrix.Invert(view);
+        var invProj = Matrix.Invert(proj);
         var invViewProj = Matrix.Invert(viewProj);
 
-        MainPassConstantBuffer.View = Matrix.Transpose(View);
+        MainPassConstantBuffer.View = Matrix.Transpose(view);
         MainPassConstantBuffer.InvView = Matrix.Transpose(invView);
-        MainPassConstantBuffer.Proj = Matrix.Transpose(Proj);
+        MainPassConstantBuffer.Proj = Matrix.Transpose(proj);
         MainPassConstantBuffer.InvProj = Matrix.Transpose(invProj);
         MainPassConstantBuffer.ViewProj = Matrix.Transpose(viewProj);
         MainPassConstantBuffer.InvViewProj = Matrix.Transpose(invViewProj);
-        MainPassConstantBuffer.EyePosW = EyePosition;
+        MainPassConstantBuffer.EyePosW = Camera.Position;
         MainPassConstantBuffer.RenderTargetSize = new Vector2(Width, Height);
         MainPassConstantBuffer.InvRenderTargetSize = 1.0f / MainPassConstantBuffer.RenderTargetSize;
         MainPassConstantBuffer.NearZ = 1.0f;
@@ -355,26 +349,12 @@ public class DirectXApp : BaseDirectXWindow
     {
         if ((button & MouseButtons.Left) != 0)
         {
-            // Один пиксель - четверть градуса.
+            // Make each pixel correspond to a quarter of a degree.
             var dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
             var dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
-            _theta += dx;
-            _phi += dy;
-
-            // Ограничиваем зенитный угол
-            // _phi = MathUtil.Clamp(_phi, 0.1f, MathUtil.Pi - 0.1f);
-        }
-        else if ((button & MouseButtons.Right) != 0)
-        {
-            // Один пиксель - четверть градуса.
-            var dx = 0.005f * (location.X - _lastMousePos.X);
-            var dy = 0.005f * (location.Y - _lastMousePos.Y);
-
-            _radius += dx - dy;
-
-            // Ограничиваем радиус
-            // _radius = MathUtil.Clamp(_radius, 3.0f, 15.0f);
+            Camera.Pitch(dy);
+            Camera.RotateY(dx);
         }
 
         _lastMousePos = location;
@@ -385,25 +365,6 @@ public class DirectXApp : BaseDirectXWindow
     {
         if (keyCode == Keys.D1)
             IsWireframe = true;
-
-        var dx = 0.1f;
-
-        if (keyCode == Keys.Left)
-            _theta += dx;
-
-        if (keyCode == Keys.Right)
-            _theta -= dx;
-
-        var dy = 0.1f;
-
-        if (keyCode == Keys.Up)
-            _phi += dy;
-
-        if (keyCode == Keys.Down)
-            _phi -= dy;
-
-        // _phi = MathUtil.Clamp(_phi, 0.1f, MathUtil.Pi - 0.1f);
-
     }
 
     /// <inheritdoc />
@@ -420,7 +381,7 @@ public class DirectXApp : BaseDirectXWindow
         base.OnResizeInternal();
 
         // The window resized, so update the aspect ratio and recompute the projection matrix.
-        Proj = Matrix.PerspectiveFovLH(MathUtil.PiOverFour, AspectRatio, 1.0f, 1000.0f);
+        Camera.SetLens(MathUtil.PiOverFour, AspectRatio, 1.0f, 1000.0f);
     }
 
     /// <summary>

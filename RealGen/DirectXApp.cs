@@ -160,7 +160,7 @@ public class DirectXApp : BaseDirectXWindow
     /// <inheritdoc />
     protected override void Draw(GameTimer gameTimer)
     {
-        CommandAllocator cmdListAlloc = CurrentFrameResource.CmdListAlloc;
+        var cmdListAlloc = CurrentFrameResource.CmdListAlloc;
 
         // Reuse the memory associated with command recording.
         // We can only reset when the associated command lists have finished execution on the GPU.

@@ -57,7 +57,7 @@ public static class TextureUtil
             data.Scan0,
             4 * width,
             4 * width * height);
-        int bufferSize = data.Height * data.Stride;
+        var bufferSize = data.Height * data.Stride;
 
         bitmap.UnlockBits(data);
 
