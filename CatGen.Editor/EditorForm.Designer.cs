@@ -34,11 +34,12 @@ partial class EditorForm
         loadModelFileButton = new System.Windows.Forms.Button();
         openModelFileDialog = new System.Windows.Forms.OpenFileDialog();
         modelPathTextBox = new System.Windows.Forms.TextBox();
+        tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
         SuspendLayout();
         //
         // loadModelFileButton
         //
-        loadModelFileButton.Location = new System.Drawing.Point(12, 41);
+        loadModelFileButton.Location = new System.Drawing.Point(707, 743);
         loadModelFileButton.Name = "loadModelFileButton";
         loadModelFileButton.Size = new System.Drawing.Size(88, 23);
         loadModelFileButton.TabIndex = 0;
@@ -55,23 +56,39 @@ partial class EditorForm
         // modelPathTextBox
         //
         modelPathTextBox.Enabled = false;
-        modelPathTextBox.Location = new System.Drawing.Point(12, 12);
+        modelPathTextBox.Location = new System.Drawing.Point(12, 743);
         modelPathTextBox.Name = "modelPathTextBox";
         modelPathTextBox.PlaceholderText = "C:\\Users\\nikit\\RiderProjects\\DirectX12-App";
-        modelPathTextBox.Size = new System.Drawing.Size(776, 23);
+        modelPathTextBox.Size = new System.Drawing.Size(689, 23);
         modelPathTextBox.TabIndex = 1;
+        //
+        // tableLayoutPanel1
+        //
+        tableLayoutPanel1.ColumnCount = 2;
+        tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+        tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+        tableLayoutPanel1.Location = new System.Drawing.Point(12, 12);
+        tableLayoutPanel1.Name = "tableLayoutPanel1";
+        tableLayoutPanel1.RowCount = 2;
+        tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50.555557F));
+        tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 49.444443F));
+        tableLayoutPanel1.Size = new System.Drawing.Size(783, 540);
+        tableLayoutPanel1.TabIndex = 2;
         //
         // EditorForm
         //
         AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
         AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        ClientSize = new System.Drawing.Size(800, 450);
+        ClientSize = new System.Drawing.Size(807, 778);
+        Controls.Add(tableLayoutPanel1);
         Controls.Add(modelPathTextBox);
         Controls.Add(loadModelFileButton);
         Text = "EditorForm";
         ResumeLayout(false);
         PerformLayout();
     }
+
+    private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
 
     private System.Windows.Forms.TextBox modelPathTextBox;
 

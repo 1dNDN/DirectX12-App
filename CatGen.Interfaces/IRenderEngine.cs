@@ -1,0 +1,8 @@
+﻿using CatGen.DTOs;
+
+namespace CatGen.Interfaces;
+
+public interface IRenderEngine
+{
+    void AddModel(ModelOnDisk path);
+}

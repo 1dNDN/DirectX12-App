@@ -4,6 +4,10 @@ using CatGen.AssetServices;
 using CatGen.Unifiers;
 using CatGen.Utils;
 
+using CatGen.DTOs;
+
+using CatGen.Interfaces;
+
 using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
@@ -18,7 +22,7 @@ namespace CatGen;
 /// <summary>
 /// Окошко, в котором всё делаем
 /// </summary>
-public class DirectXApp : BaseDirectXWindow
+public class DirectXApp : BaseDirectXWindow, IRenderEngine
 {
     /// <summary>
     /// Куча для дескрипторов Constant Buffer
@@ -132,9 +136,9 @@ public class DirectXApp : BaseDirectXWindow
     /// <summary>
     /// Редактор сцены, чтобы не пересобирать каждый раз всё заново
     /// </summary>
-    protected EditorForm Editor;
+    protected EditorForm Editor = null!;
 
-    private Thread _editorThread;
+    private Thread _editorThread = null!;
 
     /// <inheritdoc />
     [MemberNotNull(nameof(Editor))]
@@ -954,7 +958,7 @@ public class DirectXApp : BaseDirectXWindow
         base.Dispose();
     }
 
-    public void AddModel(string path)
+    public void AddModel(ModelOnDisk path)
     {
         throw new NotImplementedException();
     }
