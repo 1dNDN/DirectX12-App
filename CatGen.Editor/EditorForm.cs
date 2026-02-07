@@ -56,7 +56,7 @@ public partial class EditorForm : Form
 
     private readonly List<ModelOnDisk> _models = new();
 
-    private readonly List<SpawnedObject> _spawnedObjects = new();
+    private readonly List<SpawnedObjectMetadata> _spawnedObjects = new();
 
     private void LoadModelFileButton_Click(object sender, EventArgs e)
     {
@@ -79,7 +79,7 @@ public partial class EditorForm : Form
 
     private void _spawnedObjectsDataGridView_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
     {
-        _spawnedObjectsDataGridView.Columns[nameof(SpawnedObject.ModelOnDiskId)]?.Visible = false;
+        _spawnedObjectsDataGridView.Columns[nameof(SpawnedObjectMetadata.ModelOnDiskId)]?.Visible = false;
     }
 
     private void _saveButton_Click(object sender, EventArgs e)
@@ -118,7 +118,7 @@ public partial class EditorForm : Form
         foreach (DataGridViewRow item in _modelsListDataGridView.SelectedRows)
             if (item.DataBoundItem is ModelOnDisk boundItem)
             {
-                var spawnedObject = new SpawnedObject(IdGenerator.NewGuid(), boundItem.Id, 0.0F, 0.0F, 0.0F, IdGenerator.NewGuid());
+                var spawnedObject = new SpawnedObjectMetadata(IdGenerator.NewGuid(), boundItem.Id, 0.0F, 0.0F, 0.0F, IdGenerator.NewGuid());
                 ParentApp.SpawnObject(spawnedObject);
                 _spawnedObjectBinding.Add(spawnedObject);
             }
@@ -129,7 +129,7 @@ public partial class EditorForm : Form
     private void despawnButton_Click(object sender, EventArgs e)
     {
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObject item)
+        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
             return;
 
         ParentApp.DespawnObject(item);
@@ -141,10 +141,10 @@ public partial class EditorForm : Form
     private void cloneButton_Click(object sender, EventArgs e)
     {
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObject item)
+        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
             return;
 
-        var spawnedObject = new SpawnedObject(IdGenerator.NewGuid(), item.ModelOnDiskId, 0.0F, 0.0F, 0.0F, IdGenerator.NewGuid());
+        var spawnedObject = new SpawnedObjectMetadata(IdGenerator.NewGuid(), item.ModelOnDiskId, 0.0F, 0.0F, 0.0F, IdGenerator.NewGuid());
 
         ParentApp.SpawnObject(spawnedObject);
         _spawnedObjectBinding.Add(spawnedObject);
@@ -158,7 +158,7 @@ public partial class EditorForm : Form
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObject item)
+        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
             return;
 
         item.X = (float)xAxisUpDown.Value;
@@ -174,7 +174,7 @@ public partial class EditorForm : Form
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObject item)
+        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
             return;
 
         item.Y = (float)yAxisUpDown.Value;
@@ -190,7 +190,7 @@ public partial class EditorForm : Form
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObject item)
+        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
             return;
 
         item.Z = (float)zAxisUpDown.Value;
@@ -210,7 +210,7 @@ public partial class EditorForm : Form
                 return;
 
             var row = _spawnedObjectsDataGridView.CurrentRow;
-            if (row?.DataBoundItem is not SpawnedObject item)
+            if (row?.DataBoundItem is not SpawnedObjectMetadata item)
             {
                 xAxisUpDown.Enabled = false;
                 yAxisUpDown.Enabled = false;
@@ -250,7 +250,7 @@ public partial class EditorForm : Form
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObject item)
+        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
             return;
 
         item.Name = objectNameTextBox1.Text;

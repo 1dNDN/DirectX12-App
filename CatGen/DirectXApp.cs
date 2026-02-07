@@ -954,20 +954,26 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     public void AddModel(ModelOnDisk path)
     {
+        Scene.AddModel(path);
     }
 
     public void DeleteModel(ModelOnDisk item)
-    {}
-
-    public void SpawnObject(SpawnedObject spawnedObject)
     {
+        Scene.DeleteModel(item);
     }
 
-    public void DespawnObject(SpawnedObject item)
+    public void SpawnObject(SpawnedObjectMetadata spawnedObject)
     {
+        Scene.SpawnObject(spawnedObject);
     }
 
-    public void UpdateObject(SpawnedObject item)
+    public void DespawnObject(SpawnedObjectMetadata item)
     {
+        Scene.DespawnObject(item);
+    }
+
+    public void UpdateObject(SpawnedObjectMetadata item)
+    {
+        Scene.UpdateObject(item);
     }
 }

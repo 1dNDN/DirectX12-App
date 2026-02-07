@@ -1,10 +1,10 @@
 ﻿namespace CatGen.DTOs;
 
-public record SpawnedObject(string Id, string ModelOnDiskId, float X, float Y, float Z, string Name)
+public record SpawnedObjectMetadata(string Id, string ModelOnDiskId, float X, float Y, float Z, string Name)
 {
     public string Id { get; init; }= Id;
 
-    public string ModelOnDiskId { get; set; } = ModelOnDiskId;
+    public string ModelOnDiskId { get; init; } = ModelOnDiskId;
 
     public float X { get; set; } = X;
 

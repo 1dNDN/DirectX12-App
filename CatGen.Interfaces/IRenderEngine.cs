@@ -8,9 +8,9 @@ public interface IRenderEngine
 
     void DeleteModel(ModelOnDisk item);
 
-    void SpawnObject(SpawnedObject spawnedObject);
+    void SpawnObject(SpawnedObjectMetadata spawnedObject);
 
-    void DespawnObject(SpawnedObject item);
+    void DespawnObject(SpawnedObjectMetadata item);
 
-    void UpdateObject(SpawnedObject item);
+    void UpdateObject(SpawnedObjectMetadata item);
 }

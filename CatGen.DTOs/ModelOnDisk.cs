@@ -8,5 +8,5 @@ public record ModelOnDisk(string FilePath, string Id)
 
     public string Id { get; init; } = Id;
 
-    public List<SpawnedObject> SpawnedObjects { get; }
+    public List<SpawnedObjectMetadata> SpawnedObjects { get; }
 }

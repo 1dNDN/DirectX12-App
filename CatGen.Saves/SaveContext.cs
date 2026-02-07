@@ -8,7 +8,7 @@ public class SaveContext : DbContext
 {
     public DbSet<ModelOnDisk> ModelsOnDisk => Set<ModelOnDisk>();
 
-    public DbSet<SpawnedObject> SpawnedObjects => Set<SpawnedObject>();
+    public DbSet<SpawnedObjectMetadata> SpawnedObjects => Set<SpawnedObjectMetadata>();
 
     public SaveContext()
     {

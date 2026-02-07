@@ -11,7 +11,7 @@ public static class SaveService
         return _context.ModelsOnDisk.ToList();
     }
 
-    public static List<SpawnedObject> GetSpawnedObjects()
+    public static List<SpawnedObjectMetadata> GetSpawnedObjects()
     {
         return _context.SpawnedObjects.ToList();
     }
@@ -26,7 +26,7 @@ public static class SaveService
         _context.SaveChanges();
     }
 
-    public static void Save(List<SpawnedObject> spawnedObjects)
+    public static void Save(List<SpawnedObjectMetadata> spawnedObjects)
     {
         var oldObjects = GetSpawnedObjects();
 
