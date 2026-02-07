@@ -8,6 +8,6 @@ public static class IdGenerator
 
     public static string NewGuid()
     {
-        return hashids.EncodeLong(DateTime.Now.ToBinary());
+        return hashids.EncodeLong(Math.Abs(DateTime.Now.ToBinary()));
     }
 }

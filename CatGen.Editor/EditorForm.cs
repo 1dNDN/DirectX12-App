@@ -54,7 +54,11 @@ public partial class EditorForm : Form
         _openModelFileDialog.InitialDirectory = Path.Combine(Directory.GetCurrentDirectory(), modelsFolderName);
         _modelPathTextBox.PlaceholderText = "Example.gltf";
 
-        _models.AddRange(SaveService.GetModelsOnDisk());
+        var modelsOnDisk = SaveService.GetModelsOnDisk();
+        foreach (var model in modelsOnDisk)
+        {
+            _objectsBinding.Add(model);
+        }
     }
 
     private void _saveButton_Click(object sender, EventArgs e)

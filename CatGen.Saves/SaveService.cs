@@ -16,6 +16,7 @@ public static class SaveService
         var oldModels = GetModelsOnDisk();
 
         _context.ModelsOnDisk.RemoveRange(oldModels);
+        _context.SaveChanges();
         _context.ModelsOnDisk.AddRange(models);
         _context.SaveChanges();
     }
