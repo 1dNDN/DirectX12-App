@@ -57,6 +57,8 @@ partial class EditorForm
         label8 = new Label();
         numericUpDown6 = new NumericUpDown();
         cloneButton = new Button();
+        objectNameTextBox1 = new TextBox();
+        label9 = new Label();
         ((ISupportInitialize)_modelsListDataGridView).BeginInit();
         ((ISupportInitialize)_modelsBinding).BeginInit();
         ((ISupportInitialize)_spawnedObjectsDataGridView).BeginInit();
@@ -141,6 +143,7 @@ partial class EditorForm
         _spawnedObjectsDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _spawnedObjectsDataGridView.Size = new Size(502, 357);
         _spawnedObjectsDataGridView.TabIndex = 5;
+        _spawnedObjectsDataGridView.DataBindingComplete += _spawnedObjectsDataGridView_DataBindingComplete;
         _spawnedObjectsDataGridView.SelectionChanged += _spawnedObjectsDataGridView_SelectionChanged;
         // 
         // label1
@@ -184,7 +187,8 @@ partial class EditorForm
         // xAxisUpDown
         // 
         xAxisUpDown.DecimalPlaces = 2;
-        xAxisUpDown.Location = new Point(469, 448);
+        xAxisUpDown.Location = new Point(469, 477);
+        xAxisUpDown.Minimum = new decimal(new int[] { 100, 0, 0, int.MinValue });
         xAxisUpDown.Name = "xAxisUpDown";
         xAxisUpDown.Size = new Size(78, 23);
         xAxisUpDown.TabIndex = 10;
@@ -193,7 +197,7 @@ partial class EditorForm
         // label3
         // 
         label3.AutoSize = true;
-        label3.Location = new Point(449, 450);
+        label3.Location = new Point(449, 479);
         label3.Name = "label3";
         label3.Size = new Size(17, 15);
         label3.TabIndex = 11;
@@ -202,7 +206,7 @@ partial class EditorForm
         // label4
         // 
         label4.AutoSize = true;
-        label4.Location = new Point(449, 479);
+        label4.Location = new Point(449, 508);
         label4.Name = "label4";
         label4.Size = new Size(17, 15);
         label4.TabIndex = 13;
@@ -211,7 +215,8 @@ partial class EditorForm
         // yAxisUpDown
         // 
         yAxisUpDown.DecimalPlaces = 2;
-        yAxisUpDown.Location = new Point(469, 477);
+        yAxisUpDown.Location = new Point(469, 506);
+        yAxisUpDown.Minimum = new decimal(new int[] { 100, 0, 0, int.MinValue });
         yAxisUpDown.Name = "yAxisUpDown";
         yAxisUpDown.Size = new Size(78, 23);
         yAxisUpDown.TabIndex = 12;
@@ -220,7 +225,7 @@ partial class EditorForm
         // label5
         // 
         label5.AutoSize = true;
-        label5.Location = new Point(449, 508);
+        label5.Location = new Point(449, 537);
         label5.Name = "label5";
         label5.Size = new Size(19, 15);
         label5.TabIndex = 15;
@@ -229,7 +234,8 @@ partial class EditorForm
         // zAxisUpDown
         // 
         zAxisUpDown.DecimalPlaces = 2;
-        zAxisUpDown.Location = new Point(469, 506);
+        zAxisUpDown.Location = new Point(469, 535);
+        zAxisUpDown.Minimum = new decimal(new int[] { 100, 0, 0, int.MinValue });
         zAxisUpDown.Name = "zAxisUpDown";
         zAxisUpDown.Size = new Size(78, 23);
         zAxisUpDown.TabIndex = 14;
@@ -238,7 +244,7 @@ partial class EditorForm
         // label6
         // 
         label6.AutoSize = true;
-        label6.Location = new Point(578, 450);
+        label6.Location = new Point(578, 479);
         label6.Name = "label6";
         label6.Size = new Size(14, 15);
         label6.TabIndex = 17;
@@ -247,7 +253,7 @@ partial class EditorForm
         // numericUpDown4
         // 
         numericUpDown4.Enabled = false;
-        numericUpDown4.Location = new Point(598, 448);
+        numericUpDown4.Location = new Point(598, 477);
         numericUpDown4.Name = "numericUpDown4";
         numericUpDown4.Size = new Size(78, 23);
         numericUpDown4.TabIndex = 16;
@@ -255,7 +261,7 @@ partial class EditorForm
         // label7
         // 
         label7.AutoSize = true;
-        label7.Location = new Point(578, 479);
+        label7.Location = new Point(578, 508);
         label7.Name = "label7";
         label7.Size = new Size(14, 15);
         label7.TabIndex = 19;
@@ -264,7 +270,7 @@ partial class EditorForm
         // numericUpDown5
         // 
         numericUpDown5.Enabled = false;
-        numericUpDown5.Location = new Point(598, 477);
+        numericUpDown5.Location = new Point(598, 506);
         numericUpDown5.Name = "numericUpDown5";
         numericUpDown5.Size = new Size(78, 23);
         numericUpDown5.TabIndex = 18;
@@ -272,7 +278,7 @@ partial class EditorForm
         // label8
         // 
         label8.AutoSize = true;
-        label8.Location = new Point(578, 510);
+        label8.Location = new Point(578, 539);
         label8.Name = "label8";
         label8.Size = new Size(14, 15);
         label8.TabIndex = 21;
@@ -281,14 +287,14 @@ partial class EditorForm
         // numericUpDown6
         // 
         numericUpDown6.Enabled = false;
-        numericUpDown6.Location = new Point(598, 508);
+        numericUpDown6.Location = new Point(598, 537);
         numericUpDown6.Name = "numericUpDown6";
         numericUpDown6.Size = new Size(78, 23);
         numericUpDown6.TabIndex = 20;
         // 
         // cloneButton
         // 
-        cloneButton.Location = new Point(441, 535);
+        cloneButton.Location = new Point(441, 564);
         cloneButton.Name = "cloneButton";
         cloneButton.Size = new Size(235, 23);
         cloneButton.TabIndex = 22;
@@ -296,11 +302,30 @@ partial class EditorForm
         cloneButton.UseVisualStyleBackColor = true;
         cloneButton.Click += cloneButton_Click;
         // 
+        // objectNameTextBox1
+        // 
+        objectNameTextBox1.Location = new Point(479, 448);
+        objectNameTextBox1.Name = "objectNameTextBox1";
+        objectNameTextBox1.Size = new Size(198, 23);
+        objectNameTextBox1.TabIndex = 23;
+        objectNameTextBox1.TextChanged += objectNameTextBox1_TextChanged;
+        // 
+        // label9
+        // 
+        label9.AutoSize = true;
+        label9.Location = new Point(442, 451);
+        label9.Name = "label9";
+        label9.Size = new Size(31, 15);
+        label9.TabIndex = 24;
+        label9.Text = "Имя";
+        // 
         // EditorForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1222, 778);
+        Controls.Add(label9);
+        Controls.Add(objectNameTextBox1);
         Controls.Add(cloneButton);
         Controls.Add(label8);
         Controls.Add(numericUpDown6);
@@ -368,5 +393,7 @@ partial class EditorForm
     private Label label8;
     private NumericUpDown numericUpDown6;
     private Button cloneButton;
+    private TextBox objectNameTextBox1;
+    private Label label9;
 }
 

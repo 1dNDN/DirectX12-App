@@ -1,14 +1,16 @@
 ﻿namespace CatGen.DTOs;
 
-public record SpawnedObject(string Id, string ModelOnDiskId, float X, float Y, float Z)
+public record SpawnedObject(string Id, string ModelOnDiskId, float X, float Y, float Z, string Name)
 {
     public string Id { get; init; }= Id;
 
     public string ModelOnDiskId { get; set; } = ModelOnDiskId;
 
-    public float X { get; init; } = X;
+    public float X { get; set; } = X;
 
-    public float Y { get; init; } = Y;
+    public float Y { get; set; } = Y;
 
-    public float Z { get; init; } = Z;
+    public float Z { get; set; } = Z;
+
+    public string Name { get; set; } = Name;
 }

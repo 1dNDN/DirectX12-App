@@ -12,9 +12,8 @@ public class SaveContext : DbContext
 
     public SaveContext()
     {
-        Database.OpenConnection();
-        Database.Migrate();
         Database.EnsureCreated();
+        Database.Migrate();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

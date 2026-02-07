@@ -39,6 +39,14 @@ public partial class EditorForm : Form
         {
             _modelsBinding.Add(model);
         }
+
+        var spawnedObjects = SaveService.GetSpawnedObjects();
+        foreach (var obj in spawnedObjects)
+        {
+            _spawnedObjectBinding.Add(obj);
+        }
+
+        _spawnedObjectsDataGridView_SelectionChanged(sender, e);
     }
 
     /// <summary>
@@ -67,6 +75,11 @@ public partial class EditorForm : Form
     private void _objectListDataGridView_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
     {
         _modelsListDataGridView.Columns[nameof(ModelOnDisk.FilePath)]?.Visible = false;
+    }
+
+    private void _spawnedObjectsDataGridView_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+    {
+        _spawnedObjectsDataGridView.Columns[nameof(SpawnedObject.ModelOnDiskId)]?.Visible = false;
     }
 
     private void _saveButton_Click(object sender, EventArgs e)
@@ -105,7 +118,7 @@ public partial class EditorForm : Form
         foreach (DataGridViewRow item in _modelsListDataGridView.SelectedRows)
             if (item.DataBoundItem is ModelOnDisk boundItem)
             {
-                var spawnedObject = new SpawnedObject(IdGenerator.NewGuid(), boundItem.Id, 0.0F, 0.0F, 0.0F);
+                var spawnedObject = new SpawnedObject(IdGenerator.NewGuid(), boundItem.Id, 0.0F, 0.0F, 0.0F, IdGenerator.NewGuid());
                 ParentApp.SpawnObject(spawnedObject);
                 _spawnedObjectBinding.Add(spawnedObject);
             }
@@ -120,7 +133,7 @@ public partial class EditorForm : Form
             return;
 
         ParentApp.DespawnObject(item);
-        _modelsListDataGridView.Rows.RemoveAt(row.Index);
+        _spawnedObjectsDataGridView.Rows.RemoveAt(row.Index);
 
         Dirtyfy();
     }
@@ -131,7 +144,7 @@ public partial class EditorForm : Form
         if (row?.DataBoundItem is not SpawnedObject item)
             return;
 
-        var spawnedObject = new SpawnedObject(IdGenerator.NewGuid(), item.Id, 0.0F, 0.0F, 0.0F);
+        var spawnedObject = new SpawnedObject(IdGenerator.NewGuid(), item.ModelOnDiskId, 0.0F, 0.0F, 0.0F, IdGenerator.NewGuid());
 
         ParentApp.SpawnObject(spawnedObject);
         _spawnedObjectBinding.Add(spawnedObject);
@@ -141,13 +154,15 @@ public partial class EditorForm : Form
 
     private void xAxisUpDown_ValueChanged(object sender, EventArgs e)
     {
-        if (!xAxisUpDown.Focused)
+        if (skipValueChangedEvent)
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
         if (row?.DataBoundItem is not SpawnedObject item)
             return;
 
+        item.X = (float)xAxisUpDown.Value;
+        _spawnedObjectsDataGridView.Invalidate();
         ParentApp.UpdateObject(item);
 
         Dirtyfy();
@@ -155,13 +170,15 @@ public partial class EditorForm : Form
 
     private void yAxisUpDown_ValueChanged(object sender, EventArgs e)
     {
-        if (!yAxisUpDown.Focused)
+        if (skipValueChangedEvent)
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
         if (row?.DataBoundItem is not SpawnedObject item)
             return;
 
+        item.Y = (float)yAxisUpDown.Value;
+        _spawnedObjectsDataGridView.Invalidate();
         ParentApp.UpdateObject(item);
 
         Dirtyfy();
@@ -169,27 +186,77 @@ public partial class EditorForm : Form
 
     private void zAxisUpDown_ValueChanged(object sender, EventArgs e)
     {
-        if (!zAxisUpDown.Focused)
+        if (skipValueChangedEvent)
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
         if (row?.DataBoundItem is not SpawnedObject item)
             return;
 
+        item.Z = (float)zAxisUpDown.Value;
+        _spawnedObjectsDataGridView.Invalidate();
         ParentApp.UpdateObject(item);
 
         Dirtyfy();
     }
 
+    private bool skipValueChangedEvent = false;
+
     private void _spawnedObjectsDataGridView_SelectionChanged(object sender, EventArgs e)
     {
+        try
+        {
+            if (_spawnedObjectsDataGridView.RowCount == 0)
+                return;
+
+            var row = _spawnedObjectsDataGridView.CurrentRow;
+            if (row?.DataBoundItem is not SpawnedObject item)
+            {
+                xAxisUpDown.Enabled = false;
+                yAxisUpDown.Enabled = false;
+                zAxisUpDown.Enabled = false;
+                objectNameTextBox1.Enabled = false;
+
+                xAxisUpDown.Value = (decimal)0;
+                yAxisUpDown.Value = (decimal)0;
+                zAxisUpDown.Value = (decimal)0;
+                objectNameTextBox1.Text = string.Empty;
+
+                return;
+            }
+
+            xAxisUpDown.Enabled = true;
+            yAxisUpDown.Enabled = true;
+            zAxisUpDown.Enabled = true;
+            objectNameTextBox1.Enabled = true;
+
+            skipValueChangedEvent = true;
+            xAxisUpDown.Value = (decimal)item.X;
+            yAxisUpDown.Value = (decimal)item.Y;
+            zAxisUpDown.Value = (decimal)item.Z;
+            objectNameTextBox1.Text = item.Name;
+
+            skipValueChangedEvent = false;
+        }
+        catch (Exception ex)
+        {
+            // игнорим ошибку при закрытии
+        }
+    }
+
+    private void objectNameTextBox1_TextChanged(object sender, EventArgs e)
+    {
+        if (skipValueChangedEvent)
+            return;
+
         var row = _spawnedObjectsDataGridView.CurrentRow;
         if (row?.DataBoundItem is not SpawnedObject item)
             return;
 
-        xAxisUpDown.Value = (decimal)item.X;
-        yAxisUpDown.Value = (decimal)item.Y;
-        zAxisUpDown.Value = (decimal)item.Z;
+        item.Name = objectNameTextBox1.Text;
+        _spawnedObjectsDataGridView.Invalidate();
+
+        Dirtyfy();
     }
 }
 
