@@ -31,35 +31,35 @@ public partial class EditorForm : Form
         if (_openModelFileDialog.ShowDialog() == DialogResult.Cancel)
             return;
 
-        _modelPathTextBox.Text = _openModelFileDialog.SafeFileName;
         var model = new ModelOnDisk(_openModelFileDialog.FileName, IdGenerator.NewGuid());
 
         ParentApp.AddModel(model);
 
-        _objectsBinding.Add(model);
+        _modelsBinding.Add(model);
 
         Dirtyfy();
     }
 
     private void _objectListDataGridView_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
     {
-        _objectListDataGridView.Columns[nameof(ModelOnDisk.FilePath)]?.Visible = false;
+        _modelsListDataGridView.Columns[nameof(ModelOnDisk.FilePath)]?.Visible = false;
     }
 
     private void EditorForm_Load(object sender, EventArgs e)
     {
-        _objectsBinding.DataSource = _models;
-        _objectListDataGridView.DataSource = _objectsBinding;
+        _modelsListDataGridView.AutoGenerateColumns = true;
+
+        _modelsBinding.DataSource = _models;
+        _modelsListDataGridView.DataSource = _modelsBinding;
 
         var modelsFolderName = "Models";
 
         _openModelFileDialog.InitialDirectory = Path.Combine(Directory.GetCurrentDirectory(), modelsFolderName);
-        _modelPathTextBox.PlaceholderText = "Example.gltf";
 
         var modelsOnDisk = SaveService.GetModelsOnDisk();
         foreach (var model in modelsOnDisk)
         {
-            _objectsBinding.Add(model);
+            _modelsBinding.Add(model);
         }
     }
 
@@ -74,12 +74,12 @@ public partial class EditorForm : Form
     {
 
 
-        foreach (DataGridViewRow item in _objectListDataGridView.SelectedRows)
+        foreach (DataGridViewRow item in _modelsListDataGridView.SelectedRows)
         {
             if (item.DataBoundItem is ModelOnDisk boundItem)
                 ParentApp.DeleteModel(boundItem);
 
-            _objectListDataGridView.Rows.RemoveAt(item.Index);
+            _modelsListDataGridView.Rows.RemoveAt(item.Index);
         }
 
         Dirtyfy();
