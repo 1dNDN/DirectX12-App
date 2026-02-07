@@ -73,6 +73,7 @@ partial class EditorForm
         // 
         // _loadModelFileButton
         // 
+        _loadModelFileButton.FlatStyle = FlatStyle.Flat;
         _loadModelFileButton.Location = new Point(26, 419);
         _loadModelFileButton.Name = "_loadModelFileButton";
         _loadModelFileButton.Size = new Size(154, 23);
@@ -108,6 +109,7 @@ partial class EditorForm
         // 
         // _saveButton
         // 
+        _saveButton.FlatStyle = FlatStyle.Flat;
         _saveButton.Location = new Point(704, 743);
         _saveButton.Name = "_saveButton";
         _saveButton.Size = new Size(91, 23);
@@ -118,6 +120,7 @@ partial class EditorForm
         // 
         // deleteButton
         // 
+        deleteButton.FlatStyle = FlatStyle.Flat;
         deleteButton.Location = new Point(186, 419);
         deleteButton.Name = "deleteButton";
         deleteButton.Size = new Size(75, 23);
@@ -149,6 +152,7 @@ partial class EditorForm
         // label1
         // 
         label1.AutoSize = true;
+        label1.BackColor = Color.Transparent;
         label1.Location = new Point(26, 401);
         label1.Name = "label1";
         label1.Size = new Size(106, 15);
@@ -158,7 +162,8 @@ partial class EditorForm
         // label2
         // 
         label2.AutoSize = true;
-        label2.Location = new Point(441, 401);
+        label2.BackColor = Color.Transparent;
+        label2.Location = new Point(578, 381);
         label2.Name = "label2";
         label2.Size = new Size(167, 15);
         label2.TabIndex = 7;
@@ -166,6 +171,7 @@ partial class EditorForm
         // 
         // spawnButton
         // 
+        spawnButton.FlatStyle = FlatStyle.Flat;
         spawnButton.Location = new Point(441, 419);
         spawnButton.Name = "spawnButton";
         spawnButton.Size = new Size(91, 23);
@@ -176,6 +182,7 @@ partial class EditorForm
         // 
         // despawnButton
         // 
+        despawnButton.FlatStyle = FlatStyle.Flat;
         despawnButton.Location = new Point(538, 419);
         despawnButton.Name = "despawnButton";
         despawnButton.Size = new Size(138, 23);
@@ -294,6 +301,7 @@ partial class EditorForm
         // 
         // cloneButton
         // 
+        cloneButton.FlatStyle = FlatStyle.Flat;
         cloneButton.Location = new Point(441, 564);
         cloneButton.Name = "cloneButton";
         cloneButton.Size = new Size(235, 23);
