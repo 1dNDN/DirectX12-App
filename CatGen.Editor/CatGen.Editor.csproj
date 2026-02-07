@@ -17,7 +17,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\CatGen.Common\CatGen.Common.csproj" />
       <ProjectReference Include="..\CatGen.Interfaces\CatGen.Interfaces.csproj" />
+      <ProjectReference Include="..\CatGen.Saves\CatGen.Saves.csproj" />
     </ItemGroup>
 
 </Project>

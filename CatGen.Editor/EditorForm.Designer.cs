@@ -38,12 +38,13 @@ partial class EditorForm
         _objectListDataGridView = new DataGridView();
         _objectsBinding = new BindingSource(components);
         _saveButton = new Button();
+        deleteButton = new Button();
         ((ISupportInitialize)_objectListDataGridView).BeginInit();
         ((ISupportInitialize)_objectsBinding).BeginInit();
         SuspendLayout();
-        // 
+        //
         // _loadModelFileButton
-        // 
+        //
         _loadModelFileButton.Location = new Point(384, 743);
         _loadModelFileButton.Name = "_loadModelFileButton";
         _loadModelFileButton.Size = new Size(88, 23);
@@ -51,46 +52,59 @@ partial class EditorForm
         _loadModelFileButton.Text = "Впендюрить";
         _loadModelFileButton.UseVisualStyleBackColor = true;
         _loadModelFileButton.Click += LoadModelFileButton_Click;
-        // 
+        //
         // _openModelFileDialog
-        // 
+        //
         _openModelFileDialog.FileName = "openFileDialog1";
         _openModelFileDialog.Filter = "Models (*.gltf;*.obj;*.stl)|*.gltf;*.obj;*.stl|All files (*.*)|*.*";
         _openModelFileDialog.InitialDirectory = "C:\\Users\\nikit\\RiderProjects\\DirectX12-App";
-        // 
+        //
         // _modelPathTextBox
-        // 
+        //
         _modelPathTextBox.Enabled = false;
         _modelPathTextBox.Location = new Point(12, 743);
         _modelPathTextBox.Name = "_modelPathTextBox";
         _modelPathTextBox.PlaceholderText = "C:\\Users\\nikit\\RiderProjects\\DirectX12-App";
         _modelPathTextBox.Size = new Size(366, 23);
         _modelPathTextBox.TabIndex = 1;
-        // 
+        //
         // _objectListDataGridView
-        // 
-        _objectListDataGridView.AutoGenerateColumns = false;
+        //
+        _objectListDataGridView.AutoGenerateColumns = true;
         _objectListDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         _objectListDataGridView.DataSource = _objectsBinding;
         _objectListDataGridView.Location = new Point(26, 13);
         _objectListDataGridView.Name = "_objectListDataGridView";
         _objectListDataGridView.Size = new Size(711, 356);
         _objectListDataGridView.TabIndex = 2;
-        // 
+        _objectListDataGridView.DataBindingComplete += _objectListDataGridView_DataBindingComplete;
+        //
         // _saveButton
-        // 
+        //
         _saveButton.Location = new Point(704, 743);
         _saveButton.Name = "_saveButton";
         _saveButton.Size = new Size(91, 23);
         _saveButton.TabIndex = 3;
         _saveButton.Text = "Заебенить";
         _saveButton.UseVisualStyleBackColor = true;
-        // 
+        _saveButton.Click += _saveButton_Click;
+        //
+        // deleteButton
+        //
+        deleteButton.Location = new Point(478, 743);
+        deleteButton.Name = "deleteButton";
+        deleteButton.Size = new Size(75, 23);
+        deleteButton.TabIndex = 4;
+        deleteButton.Text = "Выпилить";
+        deleteButton.UseVisualStyleBackColor = true;
+        deleteButton.Click += deleteButton_Click;
+        //
         // EditorForm
-        // 
+        //
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(807, 778);
+        Controls.Add(deleteButton);
         Controls.Add(_saveButton);
         Controls.Add(_objectListDataGridView);
         Controls.Add(_modelPathTextBox);
@@ -114,5 +128,6 @@ partial class EditorForm
     private DataGridView _objectListDataGridView;
     private BindingSource _objectsBinding;
     private Button _saveButton;
+    private Button deleteButton;
 }
 

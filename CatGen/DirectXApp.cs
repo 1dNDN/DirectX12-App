@@ -151,6 +151,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         {
             Application.Run(new EditorForm(this));
         });
+
         _editorThread.SetApartmentState(ApartmentState.STA);
         _editorThread.Start();
 
@@ -264,16 +265,22 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
         if (KeyboardUtil.IsKeyDown(Keys.LControlKey))
             dx *= 3.0f;
+
         if (KeyboardUtil.IsKeyDown(Keys.W))
             Camera.Walk(dx * dt);
+
         if (KeyboardUtil.IsKeyDown(Keys.S))
             Camera.Walk(-dx * dt);
+
         if (KeyboardUtil.IsKeyDown(Keys.A))
             Camera.Strafe(-dx * dt);
+
         if (KeyboardUtil.IsKeyDown(Keys.D))
             Camera.Strafe(dx * dt);
+
         if (KeyboardUtil.IsKeyDown(Keys.Space))
             Camera.MoveUp(dx * dt);
+
         if (KeyboardUtil.IsKeyDown(Keys.LShiftKey))
             Camera.MoveUp(-dx * dt);
 
@@ -295,6 +302,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                     World = Matrix.Transpose(e.World),
                     TexTransform = Matrix.Transpose(e.TexTransform)
                 };
+
                 CurrentFrameResource.ObjectConstantBuffer.CopyData(e.ObjCBIndex, ref objConstants);
 
                 e.NumFramesDirty--;
@@ -421,6 +429,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
             Flags = DescriptorHeapFlags.ShaderVisible
         };
+
         SRVDescriptorHeap = RenderDevice.CreateDescriptorHeap(srvHeapDesc);
         DescriptorHeaps = [SRVDescriptorHeap];
 
@@ -549,13 +558,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         var descriptor3 = new RootDescriptor(2, 0);
 
         // A root signature is an array of root parameters.
-        var slotRootParameters = new[]
-        {
-            new RootParameter(ShaderVisibility.Pixel, textureTable),
-            new RootParameter(ShaderVisibility.Vertex, descriptor1, RootParameterType.ConstantBufferView),
-            new RootParameter(ShaderVisibility.All, descriptor2, RootParameterType.ConstantBufferView),
-            new RootParameter(ShaderVisibility.All, descriptor3, RootParameterType.ConstantBufferView)
-        };
+        var slotRootParameters = new[] { new RootParameter(ShaderVisibility.Pixel, textureTable), new RootParameter(ShaderVisibility.Vertex, descriptor1, RootParameterType.ConstantBufferView), new RootParameter(ShaderVisibility.All, descriptor2, RootParameterType.ConstantBufferView), new RootParameter(ShaderVisibility.All, descriptor3, RootParameterType.ConstantBufferView) };
 
         var rootSigDesc = new RootSignatureDescription(
             RootSignatureFlags.AllowInputAssemblerInputLayout,
@@ -618,27 +621,15 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     private void BuildShadersAndInputLayout()
     {
-        ShaderMacro[] defines =
-        {
-            new ShaderMacro("FOG", "0")
-        };
+        ShaderMacro[] defines = { new ShaderMacro("FOG", "0") };
 
-        ShaderMacro[] alphaTestDefines =
-        {
-            new ShaderMacro("FOG", "0"),
-            new ShaderMacro("ALPHA_TEST", "1")
-        };
+        ShaderMacro[] alphaTestDefines = { new ShaderMacro("FOG", "0"), new ShaderMacro("ALPHA_TEST", "1") };
 
         VertexShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0");
         PixelShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", defines);
         PixelAlphatestdShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
 
-        ShaderInputLayout = new InputLayoutDescription(new[]
-        {
-            new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
-            new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
-            new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0)
-        });
+        ShaderInputLayout = new InputLayoutDescription(new[] { new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0), new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0), new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0) });
     }
 
     private void BuildShapesAndGeometry()
@@ -800,9 +791,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             MaterialsEnum.Duck,
             GeometryEnum.Duck,
             MeshEnum.Duck,
-            Matrix.Translation(0.0f, 0.0f, 0.0f) *
-            Matrix.Scaling(1.0F) *
-            Matrix.RotationYawPitchRoll(0.0F, -float.Pi/2, float.Pi));
+            Matrix.Translation(0.0f, 0.0f, 0.0f) * Matrix.Scaling(1.0F) * Matrix.RotationYawPitchRoll(0.0F, -float.Pi / 2, float.Pi));
 
         AddRenderItem(
             RenderLayer.Transparent,
@@ -903,6 +892,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             SampleDescription = new SampleDescription(MsaaCount, MsaaQuality),
             DepthStencilFormat = DepthStencilFormat,
         };
+
         opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
         PSOs[PSOEnum.Opaque] = RenderDevice.CreateGraphicsPipelineState(opaquePsoDesc);
@@ -927,6 +917,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             LogicOp = LogicOperation.Noop,
             RenderTargetWriteMask = ColorWriteMaskFlags.All
         };
+
         transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
 
         PSOs[PSOEnum.Transparent] = RenderDevice.CreateGraphicsPipelineState(transparentPsoDesc);
@@ -946,10 +937,13 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         CbvHeap?.Dispose();
         foreach (var frameResource in Frames)
             frameResource.Dispose();
+
         foreach (var geometry in Geometries.Values)
             geometry.Dispose();
+
         foreach (var texture in Textures.Values)
             texture.Dispose();
+
         foreach (var pso in PSOs.Values)
             pso.Dispose();
 
@@ -962,4 +956,8 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     {
         // throw new NotImplementedException();
     }
+
+    public void DeleteModel(ModelOnDisk item)
+    {}
+
 }

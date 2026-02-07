@@ -1,7 +1,7 @@
-using System.ComponentModel;
-
+using CatGen.Common;
 using CatGen.DTOs;
 using CatGen.Interfaces;
+using CatGen.Saves;
 
 namespace CatGen;
 
@@ -24,7 +24,7 @@ public partial class EditorForm : Form
     /// </summary>
     public readonly IRenderEngine ParentApp;
 
-    private readonly BindingList<ModelOnDisk> _models = new();
+    private readonly List<ModelOnDisk> _models = new();
 
     private void LoadModelFileButton_Click(object sender, EventArgs e)
     {
@@ -32,7 +32,7 @@ public partial class EditorForm : Form
             return;
 
         _modelPathTextBox.Text = _openModelFileDialog.SafeFileName;
-        var model = new ModelOnDisk(_openModelFileDialog.FileName);
+        var model = new ModelOnDisk(_openModelFileDialog.FileName, IdGenerator.NewGuid());
 
         ParentApp.AddModel(model);
 
@@ -53,6 +53,24 @@ public partial class EditorForm : Form
 
         _openModelFileDialog.InitialDirectory = Path.Combine(Directory.GetCurrentDirectory(), modelsFolderName);
         _modelPathTextBox.PlaceholderText = "Example.gltf";
+
+        _models.AddRange(SaveService.GetModelsOnDisk());
+    }
+
+    private void _saveButton_Click(object sender, EventArgs e)
+    {
+        SaveService.Save(_models);
+    }
+
+    private void deleteButton_Click(object sender, EventArgs e)
+    {
+        foreach (DataGridViewRow item in _objectListDataGridView.SelectedRows)
+        {
+            if (item.DataBoundItem is ModelOnDisk boundItem)
+                ParentApp.DeleteModel(boundItem);
+
+            _objectListDataGridView.Rows.RemoveAt(item.Index);
+        }
     }
 }
 

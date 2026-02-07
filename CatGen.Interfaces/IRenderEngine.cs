@@ -4,5 +4,7 @@ namespace CatGen.Interfaces;
 
 public interface IRenderEngine
 {
-    void AddModel(ModelOnDisk path);
+    void AddModel(ModelOnDisk item);
+
+    void DeleteModel(ModelOnDisk item);
 }
