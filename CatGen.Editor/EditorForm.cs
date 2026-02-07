@@ -37,6 +37,8 @@ public partial class EditorForm : Form
         ParentApp.AddModel(model);
 
         _objectsBinding.Add(model);
+
+        Dirtyfy();
     }
 
     private void _objectListDataGridView_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
@@ -64,10 +66,14 @@ public partial class EditorForm : Form
     private void _saveButton_Click(object sender, EventArgs e)
     {
         SaveService.Save(_models);
+
+        Undirtyfy();
     }
 
     private void deleteButton_Click(object sender, EventArgs e)
     {
+
+
         foreach (DataGridViewRow item in _objectListDataGridView.SelectedRows)
         {
             if (item.DataBoundItem is ModelOnDisk boundItem)
@@ -75,6 +81,18 @@ public partial class EditorForm : Form
 
             _objectListDataGridView.Rows.RemoveAt(item.Index);
         }
+
+        Dirtyfy();
+    }
+
+    private void Dirtyfy()
+    {
+        this.Text = "Editor [Dirty]";
+    }
+
+    private void Undirtyfy()
+    {
+        this.Text = "Editor";
     }
 }
 

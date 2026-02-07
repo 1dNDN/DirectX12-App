@@ -110,7 +110,7 @@ partial class EditorForm
         Controls.Add(_modelPathTextBox);
         Controls.Add(_loadModelFileButton);
         Name = "EditorForm";
-        Text = "EditorForm";
+        Text = "Editor";
         Load += EditorForm_Load;
         ((ISupportInitialize)_objectListDataGridView).EndInit();
         ((ISupportInitialize)_objectsBinding).EndInit();
