@@ -960,6 +960,6 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     public void AddModel(ModelOnDisk path)
     {
-        throw new NotImplementedException();
+        // throw new NotImplementedException();
     }
 }

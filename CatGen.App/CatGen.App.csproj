@@ -1,23 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-
   <PropertyGroup>
+    <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>CatGen</RootNamespace>
     <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
-    <ItemGroup>
-      <Compile Update="EditorForm.cs">
-        <SubType>Form</SubType>
-      </Compile>
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\CatGen.Interfaces\CatGen.Interfaces.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CatGen\CatGen.csproj" />
+  </ItemGroup>
 
 </Project>

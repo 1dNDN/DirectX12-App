@@ -8,7 +8,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatGen.Editor", "CatGen.Edi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatGen.Interfaces", "CatGen.Interfaces\CatGen.Interfaces.csproj", "{0BA87ACB-4EEA-418A-B88A-D100E199A063}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatGen.RenderEngine", "CatGen.RenderEngine\CatGen.RenderEngine.csproj", "{B6B0A5CD-7C0F-4515-9329-AC9B9A0E4341}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatGen.App", "CatGen.App\CatGen.App.csproj", "{B6B0A5CD-7C0F-4515-9329-AC9B9A0E4341}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
