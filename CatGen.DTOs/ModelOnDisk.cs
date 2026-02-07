@@ -7,4 +7,6 @@ public record ModelOnDisk(string FilePath, string Id)
     public string Filename => Path.GetFileName(FilePath);
 
     public string Id { get; init; } = Id;
+
+    public List<SpawnedObject> SpawnedObjects { get; }
 }

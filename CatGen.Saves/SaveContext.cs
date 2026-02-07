@@ -7,9 +7,13 @@ namespace CatGen.Saves;
 public class SaveContext : DbContext
 {
     public DbSet<ModelOnDisk> ModelsOnDisk => Set<ModelOnDisk>();
+
+    public DbSet<SpawnedObject> SpawnedObjects => Set<SpawnedObject>();
+
     public SaveContext()
     {
         Database.OpenConnection();
+        Database.Migrate();
         Database.EnsureCreated();
     }
 

@@ -39,7 +39,7 @@ partial class EditorForm
         _saveButton = new Button();
         deleteButton = new Button();
         _spawnedObjectsDataGridView = new DataGridView();
-        _spawnedObjectBindingSource = new BindingSource(components);
+        _spawnedObjectBinding = new BindingSource(components);
         label1 = new Label();
         label2 = new Label();
         spawnButton = new Button();
@@ -60,7 +60,7 @@ partial class EditorForm
         ((ISupportInitialize)_modelsListDataGridView).BeginInit();
         ((ISupportInitialize)_modelsBinding).BeginInit();
         ((ISupportInitialize)_spawnedObjectsDataGridView).BeginInit();
-        ((ISupportInitialize)_spawnedObjectBindingSource).BeginInit();
+        ((ISupportInitialize)_spawnedObjectBinding).BeginInit();
         ((ISupportInitialize)xAxisUpDown).BeginInit();
         ((ISupportInitialize)yAxisUpDown).BeginInit();
         ((ISupportInitialize)zAxisUpDown).BeginInit();
@@ -132,14 +132,16 @@ partial class EditorForm
         _spawnedObjectsDataGridView.AutoGenerateColumns = false;
         _spawnedObjectsDataGridView.ClipboardCopyMode = DataGridViewClipboardCopyMode.Disable;
         _spawnedObjectsDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-        _spawnedObjectsDataGridView.DataSource = _spawnedObjectBindingSource;
+        _spawnedObjectsDataGridView.DataSource = _spawnedObjectBinding;
         _spawnedObjectsDataGridView.Location = new Point(441, 12);
+        _spawnedObjectsDataGridView.MultiSelect = false;
         _spawnedObjectsDataGridView.Name = "_spawnedObjectsDataGridView";
         _spawnedObjectsDataGridView.ReadOnly = true;
         _spawnedObjectsDataGridView.RowHeadersVisible = false;
         _spawnedObjectsDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _spawnedObjectsDataGridView.Size = new Size(502, 357);
         _spawnedObjectsDataGridView.TabIndex = 5;
+        _spawnedObjectsDataGridView.SelectionChanged += _spawnedObjectsDataGridView_SelectionChanged;
         // 
         // label1
         // 
@@ -167,6 +169,7 @@ partial class EditorForm
         spawnButton.TabIndex = 8;
         spawnButton.Text = "Заспавнить";
         spawnButton.UseVisualStyleBackColor = true;
+        spawnButton.Click += spawnButton_Click;
         // 
         // despawnButton
         // 
@@ -176,6 +179,7 @@ partial class EditorForm
         despawnButton.TabIndex = 9;
         despawnButton.Text = "Спавн говно";
         despawnButton.UseVisualStyleBackColor = true;
+        despawnButton.Click += despawnButton_Click;
         // 
         // xAxisUpDown
         // 
@@ -184,6 +188,7 @@ partial class EditorForm
         xAxisUpDown.Name = "xAxisUpDown";
         xAxisUpDown.Size = new Size(78, 23);
         xAxisUpDown.TabIndex = 10;
+        xAxisUpDown.ValueChanged += xAxisUpDown_ValueChanged;
         // 
         // label3
         // 
@@ -210,6 +215,7 @@ partial class EditorForm
         yAxisUpDown.Name = "yAxisUpDown";
         yAxisUpDown.Size = new Size(78, 23);
         yAxisUpDown.TabIndex = 12;
+        yAxisUpDown.ValueChanged += yAxisUpDown_ValueChanged;
         // 
         // label5
         // 
@@ -227,6 +233,7 @@ partial class EditorForm
         zAxisUpDown.Name = "zAxisUpDown";
         zAxisUpDown.Size = new Size(78, 23);
         zAxisUpDown.TabIndex = 14;
+        zAxisUpDown.ValueChanged += zAxisUpDown_ValueChanged;
         // 
         // label6
         // 
@@ -287,6 +294,7 @@ partial class EditorForm
         cloneButton.TabIndex = 22;
         cloneButton.Text = "Клонировать";
         cloneButton.UseVisualStyleBackColor = true;
+        cloneButton.Click += cloneButton_Click;
         // 
         // EditorForm
         // 
@@ -321,7 +329,7 @@ partial class EditorForm
         ((ISupportInitialize)_modelsListDataGridView).EndInit();
         ((ISupportInitialize)_modelsBinding).EndInit();
         ((ISupportInitialize)_spawnedObjectsDataGridView).EndInit();
-        ((ISupportInitialize)_spawnedObjectBindingSource).EndInit();
+        ((ISupportInitialize)_spawnedObjectBinding).EndInit();
         ((ISupportInitialize)xAxisUpDown).EndInit();
         ((ISupportInitialize)yAxisUpDown).EndInit();
         ((ISupportInitialize)zAxisUpDown).EndInit();
@@ -342,7 +350,7 @@ partial class EditorForm
     private Button _saveButton;
     private Button deleteButton;
     private DataGridView _spawnedObjectsDataGridView;
-    private BindingSource _spawnedObjectBindingSource;
+    private BindingSource _spawnedObjectBinding;
     private Label label1;
     private Label label2;
     private Button spawnButton;

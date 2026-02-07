@@ -954,10 +954,20 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     public void AddModel(ModelOnDisk path)
     {
-        // throw new NotImplementedException();
     }
 
     public void DeleteModel(ModelOnDisk item)
     {}
 
+    public void SpawnObject(SpawnedObject spawnedObject)
+    {
+    }
+
+    public void DespawnObject(SpawnedObject item)
+    {
+    }
+
+    public void UpdateObject(SpawnedObject item)
+    {
+    }
 }
