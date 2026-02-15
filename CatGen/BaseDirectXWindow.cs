@@ -28,7 +28,7 @@ public class BaseDirectXWindow : BaseWindow
     /// <summary>
     /// Адаптер, на котором будем рендерить
     /// </summary>
-    protected Device RenderDevice { get; private set; }
+    public Device RenderDevice { get; private set; }
 
     /// <summary>
     /// Барьер GPU
@@ -145,24 +145,24 @@ public class BaseDirectXWindow : BaseWindow
     /// <summary>
     /// Включить ли 4X MSAA
     /// </summary>
-    private bool _m4xMsaaState;
+    private bool _m4XMsaaState;
 
     /// <summary>
     /// Уровень качества 4X MSAA
     /// </summary>
-    private int _m4xMsaaQuality;
+    private int _m4XMsaaQuality;
 
     /// <summary>
     /// Включен ли MSAA 4X
     /// </summary>
-    protected bool M4xMsaaState
+    protected bool M4XMsaaState
     {
-        get => _m4xMsaaState;
+        get => _m4XMsaaState;
         set
         {
-            if (_m4xMsaaState != value)
+            if (_m4XMsaaState != value)
             {
-                _m4xMsaaState = value;
+                _m4XMsaaState = value;
 
                 if (Running)
                 {
@@ -177,12 +177,12 @@ public class BaseDirectXWindow : BaseWindow
     /// <summary>
     /// Уровень сглаживания MSAA
     /// </summary>
-    protected int MsaaCount => M4xMsaaState ? 4 : 1;
+    protected int MsaaCount => M4XMsaaState ? 4 : 1;
 
     /// <summary>
     /// Качество 4X MSAA
     /// </summary>
-    protected int MsaaQuality => M4xMsaaState ? _m4xMsaaQuality - 1 : 0;
+    protected int MsaaQuality => M4XMsaaState ? _m4XMsaaQuality - 1 : 0;
 
     /// <summary>
     /// Число буферов для SwapChain (backbuffer, screenbuffer)
@@ -209,7 +209,7 @@ public class BaseDirectXWindow : BaseWindow
         FenceEvent = new AutoResetEvent(false);
 
         InitDescriptorSizes();
-        InitMSAASettings();
+        InitMsaaSettings();
         CreateCommandObjects();
         CreateSwapChain();
         CreateRtvAndDsvDescriptorHeaps();
@@ -295,7 +295,7 @@ public class BaseDirectXWindow : BaseWindow
     /// <summary>
     /// Инициализация сглаживания MSAA
     /// </summary>
-    private void InitMSAASettings()
+    private void InitMsaaSettings()
     {
         // Проверяем поддержку 4X MSAA для формата нашего заднего буфера.
         // Все устройства с поддержкой Direct3D 11 обеспечивают 4X MSAA для всех
@@ -306,7 +306,7 @@ public class BaseDirectXWindow : BaseWindow
         msQualityLevels.Flags = MultisampleQualityLevelFlags.None;
         msQualityLevels.QualityLevelCount = 0;
         Debug.Assert(RenderDevice.CheckFeatureSupport(Feature.MultisampleQualityLevels, ref msQualityLevels));
-        _m4xMsaaQuality = msQualityLevels.QualityLevelCount;
+        _m4XMsaaQuality = msQualityLevels.QualityLevelCount;
 
     }
 
@@ -457,7 +457,7 @@ public class BaseDirectXWindow : BaseWindow
 
         var depthStencilViewDesc = new DepthStencilViewDescription
         {
-            Dimension = M4xMsaaState
+            Dimension = M4XMsaaState
                 ? DepthStencilViewDimension.Texture2DMultisampled
                 : DepthStencilViewDimension.Texture2D,
             Format = DepthStencilFormat,

@@ -2,6 +2,7 @@
 using CatGen.Saves;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CatGen.Saves.Migrations
 {
     [DbContext(typeof(SaveContext))]
-    partial class SaveContextModelSnapshot : ModelSnapshot
+    [Migration("20260215205909_AddRollAndScale")]
+    partial class AddRollAndScale
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
@@ -30,7 +33,7 @@ namespace CatGen.Saves.Migrations
                     b.ToTable("ModelsOnDisk");
                 });
 
-            modelBuilder.Entity("CatGen.DTOs.SpawnedEntityMetadata", b =>
+            modelBuilder.Entity("CatGen.DTOs.SpawnedObjectMetadata", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
@@ -68,10 +71,10 @@ namespace CatGen.Saves.Migrations
 
                     b.HasIndex("ModelOnDiskId");
 
-                    b.ToTable("SpawnedEntities");
+                    b.ToTable("SpawnedObjects");
                 });
 
-            modelBuilder.Entity("CatGen.DTOs.SpawnedEntityMetadata", b =>
+            modelBuilder.Entity("CatGen.DTOs.SpawnedObjectMetadata", b =>
                 {
                     b.HasOne("CatGen.DTOs.ModelOnDisk", null)
                         .WithMany("SpawnedObjects")

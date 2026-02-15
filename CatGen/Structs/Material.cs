@@ -7,15 +7,28 @@ namespace CatGen;
 /// </summary>
 public class Material
 {
+    public Material(Vector4 diffuseAlbedo, Vector3 fresnelR0, float roughness)
+    {
+        DiffuseAlbedo = diffuseAlbedo;
+        FresnelR0 = fresnelR0;
+        Roughness = roughness;
+    }
+
+    public Material()
+    {
+
+    }
+
     /// <summary>
     /// Уникальное имя материала для поиска
     /// </summary>
     public MaterialsEnum Name { get; set; }
+    public string NameStr { get; set; }
 
     /// <summary>
     /// Индекс константного буфера для материала
     /// </summary>
-    public int MaterialCBIndex { get; set; } = -1;
+    public int MaterialCbIndex { get; set; } = -1;
 
     /// <summary>
     /// Индекс кучи ресурса шейдеров для текстуры диффузного освещения

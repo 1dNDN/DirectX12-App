@@ -7,6 +7,7 @@ using CatGen.Utils;
 using CatGen.DTOs;
 
 using CatGen.Interfaces;
+using CatGen.Saves;
 
 using SharpDX;
 using SharpDX.Direct3D;
@@ -16,6 +17,7 @@ using SharpDX.DXGI;
 using Color = SharpDX.Color;
 using Point = SharpDX.Point;
 using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimension;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace CatGen;
 
@@ -25,6 +27,14 @@ namespace CatGen;
 public class DirectXApp : BaseDirectXWindow, IRenderEngine
 {
     /// <summary>
+    /// Конструктор
+    /// </summary>
+    public DirectXApp() : base()
+    {
+        Camera = new Camera(Timer);
+    }
+
+    /// <summary>
     /// Куча для дескрипторов Constant Buffer
     /// </summary>
     protected DescriptorHeap CbvHeap { get; set; }
@@ -32,7 +42,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// <summary>
     /// Куча для дескрипторов Shader Resource View
     /// </summary>
-    protected DescriptorHeap SRVDescriptorHeap { get; set; }
+    protected DescriptorHeap SrvDescriptorHeap { get; set; }
 
     /// <summary>
     /// Список куч с дескрипторами буферов
@@ -56,21 +66,6 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     protected int CurrentFrameIndex;
 
     /// <summary>
-    /// Геометрии для сцены
-    /// </summary>
-    protected readonly Dictionary<GeometryEnum, MeshGeometry> Geometries = new();
-
-    /// <summary>
-    /// Материалы для геометрий сцены
-    /// </summary>
-    private Dictionary<MaterialsEnum, Material> Materials { get; set; } = new();
-
-    /// <summary>
-    /// Текстуры для геометрий сцены
-    /// </summary>
-    private readonly Dictionary<TexturesEnum, Texture> Textures = new();
-
-    /// <summary>
     /// Байткод скомпилированного вертексного шейдера
     /// </summary>
     private ShaderBytecode VertexShaderByteCode { get; set; }
@@ -90,18 +85,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// </summary>
     protected readonly Dictionary<PSOEnum, PipelineState> PSOs = new();
 
-    /// <summary>
-    /// Список всех объектов геометрии сцены
-    /// </summary>
-    protected readonly List<RenderItem> SceneItems = [];
 
-    /// <summary>
-    /// Список всех объектов геометрии сцены, поделенных по PSO
-    /// </summary>
-    protected readonly Dictionary<RenderLayer, List<RenderItem>> SceneItemLayers = new(1)
-    {
-        [RenderLayer.Opaque] = [],
-    };
 
     /// <summary>
     /// Описание ресурсов для графического пайплайна
@@ -126,12 +110,12 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// <summary>
     /// Камера
     /// </summary>
-    protected readonly Camera Camera = new();
+    protected Camera Camera { get; set; }
 
     /// <summary>
     /// Сцена с объектами и всей хернёй, что мы рендерим.
     /// </summary>
-    protected readonly SceneController Scene = new();
+    protected SceneResourcesService Scene { get; set; }
 
     /// <summary>
     /// Редактор сцены, чтобы не пересобирать каждый раз всё заново
@@ -146,6 +130,8 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     {
         base.Init();
 
+        Scene = new SceneResourcesService(RenderDevice, RenderCommandList);
+
         Editor = new EditorForm(this);
         _editorThread = new Thread(() =>
         {
@@ -156,15 +142,17 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         _editorThread.Start();
 
         RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
+
         Camera.Position = new Vector3(0.0f, 2.0f, -5.0f);
 
-        BuildTextures();
+        // BuildTextures(); TODO: удалить
+        BuildScene();
         BuildRootSignature();
         BuildDescriptorHeaps();
         BuildShadersAndInputLayout();
-        BuildShapesAndGeometry();
-        BuildMaterials();
-        BuildRenderItems();
+        // BuildShapesAndGeometry(); TODO: удалить
+        // BuildMaterials();TODO: удалить
+        // BuildRenderItems();TODO: удалить
         BuildFrameResources();
         // BuildConstantBufferViews();
         BuildPSOs();
@@ -206,16 +194,17 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
         RenderCommandList.SetGraphicsRootSignature(RenderRootSignature);
 
-        var passCB = CurrentFrameResource.PassConstantBuffer.Resource;
-        RenderCommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
+        var passCb = CurrentFrameResource.PassConstantBuffer.Resource;
+        RenderCommandList.SetGraphicsRootConstantBufferView(2, passCb.GPUVirtualAddress);
 
-        DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.Opaque]);
+        DrawRenderItems(RenderCommandList, Scene.SceneItemLayers[RenderLayer.Opaque]);
 
-        RenderCommandList.PipelineState = PSOs[PSOEnum.AlphaTested];
-        DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.AlphaTested]);
-
-        RenderCommandList.PipelineState = PSOs[PSOEnum.Transparent];
-        DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.Transparent]);
+        // TODO: переделать
+        // RenderCommandList.PipelineState = PSOs[PSOEnum.AlphaTested];
+        // DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.AlphaTested]);
+        //
+        // RenderCommandList.PipelineState = PSOs[PSOEnum.Transparent];
+        // DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.Transparent]);
 
         // Indicate a state transition on the resource usage.
         RenderCommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -241,7 +230,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// <inheritdoc />
     protected override void Update(GameTimer timer)
     {
-        UpdateCamera();
+        Camera.Update();
 
         CurrentFrameIndex = (CurrentFrameIndex + 1) % NumFrameResources;
 
@@ -255,41 +244,12 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
         UpdateObjectCBs();
         UpdateMaterialCBs();
-        UpdateMainPassCB(timer);
-    }
-
-    private void UpdateCamera()
-    {
-        var dx = 10.0f;
-        var dt = Timer.DeltaTime;
-
-        if (KeyboardUtil.IsKeyDown(Keys.LControlKey))
-            dx *= 3.0f;
-
-        if (KeyboardUtil.IsKeyDown(Keys.W))
-            Camera.Walk(dx * dt);
-
-        if (KeyboardUtil.IsKeyDown(Keys.S))
-            Camera.Walk(-dx * dt);
-
-        if (KeyboardUtil.IsKeyDown(Keys.A))
-            Camera.Strafe(-dx * dt);
-
-        if (KeyboardUtil.IsKeyDown(Keys.D))
-            Camera.Strafe(dx * dt);
-
-        if (KeyboardUtil.IsKeyDown(Keys.Space))
-            Camera.MoveUp(dx * dt);
-
-        if (KeyboardUtil.IsKeyDown(Keys.LShiftKey))
-            Camera.MoveUp(-dx * dt);
-
-        Camera.UpdateViewMatrix();
+        UpdateMainPassCb(timer);
     }
 
     private void UpdateObjectCBs()
     {
-        foreach (var e in SceneItems)
+        foreach (var e in Scene.SceneItems)
         {
             // Only update the cbuffer data if the constants have changed.
             // This needs to be tracked per frame resource.
@@ -303,7 +263,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                     TexTransform = Matrix.Transpose(e.TexTransform)
                 };
 
-                CurrentFrameResource.ObjectConstantBuffer.CopyData(e.ObjCBIndex, ref objConstants);
+                CurrentFrameResource.ObjectConstantBuffer.CopyData(e.ObjCbIndex, ref objConstants);
 
                 e.NumFramesDirty--;
             }
@@ -312,7 +272,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     private void UpdateMaterialCBs()
     {
-        foreach (var mat in Materials.Values)
+        foreach (var mat in Scene.Materials.Values)
         {
             // Only update the cbuffer data if the constants have changed. If the cbuffer
             // data changes, it needs to be updated for each FrameResource.
@@ -326,7 +286,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                     MatTransform = Matrix.Transpose(mat.MatTransform),
                 };
 
-                CurrentFrameResource.MaterialConstantBuffer.CopyData(mat.MaterialCBIndex, ref matConstants);
+                CurrentFrameResource.MaterialConstantBuffer.CopyData(mat.MaterialCbIndex, ref matConstants);
 
                 // Next FrameResource need to be updated too.
                 mat.NumFramesDirty--;
@@ -334,7 +294,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         }
     }
 
-    private void UpdateMainPassCB(GameTimer timer)
+    private void UpdateMainPassCb(GameTimer timer)
     {
         var view = Camera.View;
         var proj = Camera.Proj;
@@ -425,15 +385,15 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         //TODO
         var srvHeapDesc = new DescriptorHeapDescription
         {
-            DescriptorCount = Textures.Count,
+            DescriptorCount = Scene.Textures.Count,
             Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
             Flags = DescriptorHeapFlags.ShaderVisible
         };
 
-        SRVDescriptorHeap = RenderDevice.CreateDescriptorHeap(srvHeapDesc);
-        DescriptorHeaps = [SRVDescriptorHeap];
+        SrvDescriptorHeap = RenderDevice.CreateDescriptorHeap(srvHeapDesc);
+        DescriptorHeaps = [SrvDescriptorHeap];
 
-        var descriptorHandle = SRVDescriptorHeap.CPUDescriptorHandleForHeapStart;
+        var descriptorHandle = SrvDescriptorHeap.CPUDescriptorHandleForHeapStart;
         var srvDescription = new ShaderResourceViewDescription()
         {
             Shader4ComponentMapping = TextureUtil.DefaultShader4ComponentMapping,
@@ -445,7 +405,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             },
         };
 
-        foreach (var texture in Textures.Values)
+        foreach (var texture in Scene.Textures.Values)
         {
             var resource = texture.Resource;
             srvDescription.Format = resource.Description.Format;
@@ -512,6 +472,8 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     //     }
     // }
 
+    /* TODO: выпилить
+
     private void BuildTextures()
     {
         AddGltfTexture(TexturesEnum.Duck, "./Models/Duck/glTF-Embedded/Duck.gltf");
@@ -538,6 +500,14 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         };
 
         Textures[name] = texture;
+    }*/
+
+    private void BuildScene()
+    {
+        Scene.AddModels(SaveService.GetModelsOnDisk());
+        Scene.SpawnEntities(SaveService.GetSpawnedEntities());
+
+        Scene.Load();
     }
 
     private void BuildRootSignature()
@@ -632,6 +602,9 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         ShaderInputLayout = new InputLayoutDescription(new[] { new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0), new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0), new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0) });
     }
 
+    /*
+     TODO: удалить
+
     private void BuildShapesAndGeometry()
     {
         var vertices = new List<BiggaVertex>();
@@ -670,15 +643,19 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         geo3.DrawArgs[MeshEnum.Grid] = grid;
         Geometries[geo3.Name] = geo3;
     }
-
+*/
     private void BuildFrameResources()
     {
         for (var i = 0; i < NumFrameResources; i++)
         {
-            Frames.Add(new Frame(RenderDevice, 1, SceneItems.Count, Materials.Count));
+            Frames.Add(new Frame(RenderDevice, 1, Scene.SceneItems.Count, Scene.Materials.Count));
             FenceEvents.Add(new AutoResetEvent(false));
         }
     }
+
+    /*
+
+    TODO: delete
 
     [SuppressMessage("ReSharper", "RedundantAssignment")]
     private void BuildMaterials()
@@ -740,7 +717,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
         var materialIndex = 0;
         AddMaterial(
-            new Material
+            new Material()
             {
                 Name = MaterialsEnum.Duck,
                 DiffuseAlbedo = Color.White.ToVector4(),
@@ -750,7 +727,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             ref materialIndex);
 
         AddMaterial(
-            new Material
+            new Material()
             {
                 Name = MaterialsEnum.Semitransparent,
                 DiffuseAlbedo = new Vector4(1.0f, 1.0f, 1.0f, 0.5f),
@@ -760,7 +737,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             ref materialIndex);
 
         AddMaterial(
-            new Material
+            new Material()
             {
                 Name = MaterialsEnum.Fence,
                 DiffuseAlbedo = new Vector4(1.0f),
@@ -777,8 +754,12 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         Materials[mat.Name] = mat;
 
         materialIndex++;
-    }
+    }*/
 
+
+    /*
+
+     TODO: удалить
 
     [SuppressMessage("ReSharper", "RedundantAssignment")]
     private void BuildRenderItems()
@@ -824,7 +805,6 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "cylinder", Matrix.Translation(1.0f, 1.5f, 0.0f) * huiTranslation);
         // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(1.0f, 3.0f, 0.0f) * huiTranslation);
     }
-
     private void AddRenderItem(RenderLayer layer, ref int objConstantBufferIndex, MaterialsEnum matName, GeometryEnum geoName, MeshEnum submeshName, Matrix? world = null)
     {
         var geo = Geometries[geoName];
@@ -848,13 +828,14 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         objConstantBufferIndex++;
     }
 
+*/
     private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
     {
-        var objectCBSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
-        var materialCBSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
+        var objectCbSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
+        var materialCbSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
 
-        var objectCB = CurrentFrameResource.ObjectConstantBuffer.Resource;
-        var materialCB = CurrentFrameResource.MaterialConstantBuffer.Resource;
+        var objectCb = CurrentFrameResource.ObjectConstantBuffer.Resource;
+        var materialCb = CurrentFrameResource.MaterialConstantBuffer.Resource;
 
         foreach (var item in ritems)
         {
@@ -862,14 +843,14 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             cmdList.SetIndexBuffer(item.Geo.IndexBufferView);
             cmdList.PrimitiveTopology = item.PrimitiveType;
 
-            var textureHandle = SRVDescriptorHeap.GPUDescriptorHandleForHeapStart + item.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
+            var textureHandle = SrvDescriptorHeap.GPUDescriptorHandleForHeapStart + item.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
 
-            var objectCBAddress = objectCB.GPUVirtualAddress + item.ObjCBIndex * objectCBSizeBytes;
-            var materialCBAddress = materialCB.GPUVirtualAddress + item.Mat.MaterialCBIndex * materialCBSizeBytes;
+            var objectCbAddress = objectCb.GPUVirtualAddress + item.ObjCbIndex * objectCbSizeBytes;
+            var materialCbAddress = materialCb.GPUVirtualAddress + item.Mat.MaterialCbIndex * materialCbSizeBytes;
 
             cmdList.SetGraphicsRootDescriptorTable(0, textureHandle);
-            cmdList.SetGraphicsRootConstantBufferView(1, objectCBAddress);
-            cmdList.SetGraphicsRootConstantBufferView(3, materialCBAddress);
+            cmdList.SetGraphicsRootConstantBufferView(1, objectCbAddress);
+            cmdList.SetGraphicsRootConstantBufferView(3, materialCbAddress);
 
             cmdList.DrawIndexedInstanced(item.IndexCount, 1, item.StartIndexLocation, item.BaseVertexLocation, 0);
         }
@@ -932,17 +913,13 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// <inheritdoc />
     public override void Dispose()
     {
-        SRVDescriptorHeap?.Dispose();
+        SrvDescriptorHeap?.Dispose();
         RenderRootSignature?.Dispose();
         CbvHeap?.Dispose();
         foreach (var frameResource in Frames)
             frameResource.Dispose();
 
-        foreach (var geometry in Geometries.Values)
-            geometry.Dispose();
-
-        foreach (var texture in Textures.Values)
-            texture.Dispose();
+        Scene.Dispose();
 
         foreach (var pso in PSOs.Values)
             pso.Dispose();
@@ -962,17 +939,17 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         Scene.DeleteModel(item);
     }
 
-    public void SpawnObject(SpawnedObjectMetadata spawnedObject)
+    public void SpawnObject(SpawnedEntityMetadata spawnedObject)
     {
-        Scene.SpawnObject(spawnedObject);
+        Scene.SpawnEntity(spawnedObject);
     }
 
-    public void DespawnObject(SpawnedObjectMetadata item)
+    public void DespawnObject(SpawnedEntityMetadata item)
     {
         Scene.DespawnObject(item);
     }
 
-    public void UpdateObject(SpawnedObjectMetadata item)
+    public void UpdateObject(SpawnedEntityMetadata item)
     {
         Scene.UpdateObject(item);
     }

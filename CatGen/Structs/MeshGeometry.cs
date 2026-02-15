@@ -22,6 +22,9 @@ namespace CatGen;
 /// </summary>
 public class MeshGeometry : IDisposable
 {
+    private MeshGeometry()
+    {}
+
     private readonly List<IDisposable> _toDispose = [];
 
     /// <summary>
@@ -98,7 +101,7 @@ public class MeshGeometry : IDisposable
     /// MeshGeometry может хранить несколько разных геометрий в одном буфере индексов и вертексов.
     /// Для того чтобы отрисовывать Submesh, нужно использовать этот словарь.
     /// </summary>
-    public Dictionary<MeshEnum, SubmeshGeometry> DrawArgs { get; } = new Dictionary<MeshEnum, SubmeshGeometry>();
+    public Dictionary<string, SubmeshGeometry> DrawArgs { get; } = new Dictionary<string, SubmeshGeometry>();
 
 
     /// <summary>

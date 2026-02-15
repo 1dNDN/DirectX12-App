@@ -29,7 +29,7 @@ public class RenderItem
     /// <summary>
     /// Индекс объекта в буфере констант для этого объекта
     /// </summary>
-    public int ObjCBIndex { get; set; } = -1;
+    public int ObjCbIndex { get; set; } = -1;
 
     /// <summary>
     /// Материал объекта

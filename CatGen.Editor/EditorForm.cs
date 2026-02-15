@@ -40,7 +40,7 @@ public partial class EditorForm : Form
             _modelsBinding.Add(model);
         }
 
-        var spawnedObjects = SaveService.GetSpawnedObjects();
+        var spawnedObjects = SaveService.GetSpawnedEntities();
         foreach (var obj in spawnedObjects)
         {
             _spawnedObjectBinding.Add(obj);
@@ -56,7 +56,7 @@ public partial class EditorForm : Form
 
     private readonly List<ModelOnDisk> _models = new();
 
-    private readonly List<SpawnedObjectMetadata> _spawnedObjects = new();
+    private readonly List<SpawnedEntityMetadata> _spawnedObjects = new();
 
     private void LoadModelFileButton_Click(object sender, EventArgs e)
     {
@@ -79,7 +79,7 @@ public partial class EditorForm : Form
 
     private void _spawnedObjectsDataGridView_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
     {
-        _spawnedObjectsDataGridView.Columns[nameof(SpawnedObjectMetadata.ModelOnDiskId)]?.Visible = false;
+        _spawnedObjectsDataGridView.Columns[nameof(SpawnedEntityMetadata.ModelOnDiskId)]?.Visible = false;
     }
 
     private void _saveButton_Click(object sender, EventArgs e)
@@ -118,7 +118,7 @@ public partial class EditorForm : Form
         foreach (DataGridViewRow item in _modelsListDataGridView.SelectedRows)
             if (item.DataBoundItem is ModelOnDisk boundItem)
             {
-                var spawnedObject = new SpawnedObjectMetadata(IdGenerator.NewGuid(), boundItem.Id, 0.0F, 0.0F, 0.0F, IdGenerator.NewGuid());
+                var spawnedObject = new SpawnedEntityMetadata(IdGenerator.NewGuid(), boundItem.Id, IdGenerator.NewGuid());
                 ParentApp.SpawnObject(spawnedObject);
                 _spawnedObjectBinding.Add(spawnedObject);
             }
@@ -129,7 +129,7 @@ public partial class EditorForm : Form
     private void despawnButton_Click(object sender, EventArgs e)
     {
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
+        if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             return;
 
         ParentApp.DespawnObject(item);
@@ -141,10 +141,10 @@ public partial class EditorForm : Form
     private void cloneButton_Click(object sender, EventArgs e)
     {
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
+        if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             return;
 
-        var spawnedObject = new SpawnedObjectMetadata(IdGenerator.NewGuid(), item.ModelOnDiskId, 0.0F, 0.0F, 0.0F, IdGenerator.NewGuid());
+        var spawnedObject = new SpawnedEntityMetadata(IdGenerator.NewGuid(), item.ModelOnDiskId, IdGenerator.NewGuid());
 
         ParentApp.SpawnObject(spawnedObject);
         _spawnedObjectBinding.Add(spawnedObject);
@@ -154,11 +154,11 @@ public partial class EditorForm : Form
 
     private void xAxisUpDown_ValueChanged(object sender, EventArgs e)
     {
-        if (skipValueChangedEvent)
+        if (_skipValueChangedEvent)
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
+        if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             return;
 
         item.X = (float)xAxisUpDown.Value;
@@ -170,11 +170,11 @@ public partial class EditorForm : Form
 
     private void yAxisUpDown_ValueChanged(object sender, EventArgs e)
     {
-        if (skipValueChangedEvent)
+        if (_skipValueChangedEvent)
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
+        if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             return;
 
         item.Y = (float)yAxisUpDown.Value;
@@ -186,11 +186,11 @@ public partial class EditorForm : Form
 
     private void zAxisUpDown_ValueChanged(object sender, EventArgs e)
     {
-        if (skipValueChangedEvent)
+        if (_skipValueChangedEvent)
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
+        if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             return;
 
         item.Z = (float)zAxisUpDown.Value;
@@ -200,7 +200,7 @@ public partial class EditorForm : Form
         Dirtyfy();
     }
 
-    private bool skipValueChangedEvent = false;
+    private bool _skipValueChangedEvent = false;
 
     private void _spawnedObjectsDataGridView_SelectionChanged(object sender, EventArgs e)
     {
@@ -210,7 +210,7 @@ public partial class EditorForm : Form
                 return;
 
             var row = _spawnedObjectsDataGridView.CurrentRow;
-            if (row?.DataBoundItem is not SpawnedObjectMetadata item)
+            if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             {
                 xAxisUpDown.Enabled = false;
                 yAxisUpDown.Enabled = false;
@@ -230,13 +230,13 @@ public partial class EditorForm : Form
             zAxisUpDown.Enabled = true;
             objectNameTextBox1.Enabled = true;
 
-            skipValueChangedEvent = true;
+            _skipValueChangedEvent = true;
             xAxisUpDown.Value = (decimal)item.X;
             yAxisUpDown.Value = (decimal)item.Y;
             zAxisUpDown.Value = (decimal)item.Z;
             objectNameTextBox1.Text = item.Name;
 
-            skipValueChangedEvent = false;
+            _skipValueChangedEvent = false;
         }
         catch (Exception ex)
         {
@@ -246,11 +246,11 @@ public partial class EditorForm : Form
 
     private void objectNameTextBox1_TextChanged(object sender, EventArgs e)
     {
-        if (skipValueChangedEvent)
+        if (_skipValueChangedEvent)
             return;
 
         var row = _spawnedObjectsDataGridView.CurrentRow;
-        if (row?.DataBoundItem is not SpawnedObjectMetadata item)
+        if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             return;
 
         item.Name = objectNameTextBox1.Text;

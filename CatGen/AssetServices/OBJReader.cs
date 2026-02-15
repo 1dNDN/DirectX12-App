@@ -12,7 +12,7 @@ namespace CatGen.Unifiers;
 /// <summary>
 /// Класс для импорта моделей в формате OBJ/MTL
 /// </summary>
-public static class OBJReader
+public static class ObjReader
 {
     /// <summary>
     /// Импортирует только геометрию

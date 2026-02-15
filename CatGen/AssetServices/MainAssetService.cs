@@ -37,9 +37,10 @@ public enum MeshEnum
 }
 
 
+//TODO: не уверен, что оно тут надо
 public enum GeometryEnum
 {
-    Duck = 0,
+    Master = 0,
     Semitransparent = 1,
     Fence = 2,
 }

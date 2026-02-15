@@ -8,12 +8,11 @@ public class SaveContext : DbContext
 {
     public DbSet<ModelOnDisk> ModelsOnDisk => Set<ModelOnDisk>();
 
-    public DbSet<SpawnedObjectMetadata> SpawnedObjects => Set<SpawnedObjectMetadata>();
+    public DbSet<SpawnedEntityMetadata> SpawnedEntities => Set<SpawnedEntityMetadata>();
 
     public SaveContext()
     {
         Database.EnsureCreated();
-        Database.Migrate();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

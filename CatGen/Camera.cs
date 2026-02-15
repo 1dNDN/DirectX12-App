@@ -11,13 +11,15 @@ namespace CatGen;
 /// </summary>
 public class Camera
 {
+    private readonly GameTimer _timer;
     private bool _viewDirty = true;
 
     /// <summary>
     /// Конструктор камеры
     /// </summary>
-    public Camera()
+    public Camera(GameTimer timer)
     {
+        _timer = timer;
         SetLens(MathUtil.PiOverFour, 1.0f, 1.0f, 1000.0f);
     }
 
@@ -219,5 +221,37 @@ public class Camera
             Vector3.TransformNormal(ray.Direction, toWorld));
 
         return ray;
+    }
+
+    /// <summary>
+    /// Обновляет состояние камеры по сравнению с прошлым тиком
+    /// </summary>
+    public void Update()
+    {
+        var dx = 10.0f;
+        var dt = _timer.DeltaTime;
+
+        if (KeyboardUtil.IsKeyDown(Keys.LControlKey))
+            dx *= 3.0f;
+
+        if (KeyboardUtil.IsKeyDown(Keys.W))
+            Walk(dx * dt);
+
+        if (KeyboardUtil.IsKeyDown(Keys.S))
+            Walk(-dx * dt);
+
+        if (KeyboardUtil.IsKeyDown(Keys.A))
+            Strafe(-dx * dt);
+
+        if (KeyboardUtil.IsKeyDown(Keys.D))
+            Strafe(dx * dt);
+
+        if (KeyboardUtil.IsKeyDown(Keys.Space))
+            MoveUp(dx * dt);
+
+        if (KeyboardUtil.IsKeyDown(Keys.LShiftKey))
+            MoveUp(-dx * dt);
+
+        UpdateViewMatrix();
     }
 }

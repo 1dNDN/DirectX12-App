@@ -21,12 +21,12 @@ namespace CatGen.AssetServices;
 ///     https://github.com/RobyDX/SharpDX_D3D12HelloWorld/blob/master/D3D12HelloMesh/TextureUtilities.cs.
 ///     Modified to support DX10 extension.
 /// </remarks>
-public class DDSReader
+public class DdsReader
 {
     private const int DDS_MAGIC = 0x20534444; // "DDS "
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    private struct DDS_PIXELFORMAT
+    private struct DdsPixelformat
     {
         public int size;
         public int flags;
@@ -73,7 +73,7 @@ public class DDSReader
     private const int DDS_FLAGS_VOLUME = 0x00200000; // DDSCAPS2_VOLUME
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    private struct DDS_HEADER
+    private struct DdsHeader
     {
         public int size;
         public int flags;
@@ -88,7 +88,7 @@ public class DDSReader
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 11)]
         public int[] reserved1;
 
-        public DDS_PIXELFORMAT ddspf;
+        public DdsPixelformat ddspf;
         public int caps;
         public int caps2;
         public int caps3;
@@ -97,7 +97,7 @@ public class DDSReader
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    private struct DDS_HEADER_DXT10
+    private struct DdsHeaderDxt10
     {
         public Format dxgiFormat;
         public int resourceDimension;
@@ -319,14 +319,14 @@ public class DDSReader
     }
 
 
-    private static bool ISBITMASK(DDS_PIXELFORMAT ddpf, uint r, uint g, uint b, uint a) =>
+    private static bool Isbitmask(DdsPixelformat ddpf, uint r, uint g, uint b, uint a) =>
         ddpf.RBitMask == r && ddpf.GBitMask == g && ddpf.BBitMask == b && ddpf.ABitMask == a;
 
-    private static int MAKEFOURCC(int ch0, int ch1, int ch2, int ch3) =>
+    private static int Makefourcc(int ch0, int ch1, int ch2, int ch3) =>
         (byte)ch0 | (byte)ch1 << 8 | (byte)ch2 << 16 | (byte)ch3 << 24;
 
 
-    private static Format GetDXGIFormat(DDS_PIXELFORMAT ddpf)
+    private static Format GetDXGIFormat(DdsPixelformat ddpf)
     {
 
         if ((ddpf.flags & DDS_RGB) > 0)
@@ -336,13 +336,13 @@ public class DDSReader
             switch (ddpf.RGBBitCount)
             {
                 case 32:
-                    if (ISBITMASK(ddpf, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000))
+                    if (Isbitmask(ddpf, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000))
                         return Format.R8G8B8A8_UNorm;
 
-                    if (ISBITMASK(ddpf, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000))
+                    if (Isbitmask(ddpf, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000))
                         return Format.B8G8R8A8_UNorm;
 
-                    if (ISBITMASK(ddpf, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000))
+                    if (Isbitmask(ddpf, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000))
                         return Format.B8G8R8X8_UNorm;
 
                     // No DXGI format maps to ISBITMASK(0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000) aka D3DFMT_X8B8G8R8
@@ -354,15 +354,15 @@ public class DDSReader
                     // header extension and specify the DXGI_FORMAT_R10G10B10A2_UNORM format directly
 
                     // For 'correct' writers, this should be 0x000003ff, 0x000ffc00, 0x3ff00000 for RGB data
-                    if (ISBITMASK(ddpf, 0x3ff00000, 0x000ffc00, 0x000003ff, 0xc0000000))
+                    if (Isbitmask(ddpf, 0x3ff00000, 0x000ffc00, 0x000003ff, 0xc0000000))
                         return Format.R10G10B10A2_UNorm;
 
                     // No DXGI format maps to ISBITMASK(0x000003ff, 0x000ffc00, 0x3ff00000, 0xc0000000) aka D3DFMT_A2R10G10B10
 
-                    if (ISBITMASK(ddpf, 0x0000ffff, 0xffff0000, 0x00000000, 0x00000000))
+                    if (Isbitmask(ddpf, 0x0000ffff, 0xffff0000, 0x00000000, 0x00000000))
                         return Format.R16G16_UNorm;
 
-                    if (ISBITMASK(ddpf, 0xffffffff, 0x00000000, 0x00000000, 0x00000000))
+                    if (Isbitmask(ddpf, 0xffffffff, 0x00000000, 0x00000000, 0x00000000))
                         // Only 32-bit color channel format in D3D9 was R32F
                         return Format.R32_Float; // D3DX writes this out as a FourCC of 114
 
@@ -373,14 +373,14 @@ public class DDSReader
                     break;
 
                 case 16:
-                    if (ISBITMASK(ddpf, 0x7c00, 0x03e0, 0x001f, 0x8000))
+                    if (Isbitmask(ddpf, 0x7c00, 0x03e0, 0x001f, 0x8000))
                         return Format.B5G5R5A1_UNorm;
 
-                    if (ISBITMASK(ddpf, 0xf800, 0x07e0, 0x001f, 0x0000))
+                    if (Isbitmask(ddpf, 0xf800, 0x07e0, 0x001f, 0x0000))
                         return Format.B5G6R5_UNorm;
 
                     // No DXGI format maps to ISBITMASK(0x7c00, 0x03e0, 0x001f, 0x0000) aka D3DFMT_X1R5G5B5
-                    if (ISBITMASK(ddpf, 0x0f00, 0x00f0, 0x000f, 0xf000))
+                    if (Isbitmask(ddpf, 0x0f00, 0x00f0, 0x000f, 0xf000))
                         return Format.B4G4R4A4_UNorm;
 
                     // No DXGI format maps to ISBITMASK(0x0f00, 0x00f0, 0x000f, 0x0000) aka D3DFMT_X4R4G4B4
@@ -392,16 +392,16 @@ public class DDSReader
         else if ((ddpf.flags & DDS_LUMINANCE) > 0)
         {
             if (8 == ddpf.RGBBitCount)
-                if (ISBITMASK(ddpf, 0x000000ff, 0x00000000, 0x00000000, 0x00000000))
+                if (Isbitmask(ddpf, 0x000000ff, 0x00000000, 0x00000000, 0x00000000))
                     return Format.R8_UNorm; // D3DX10/11 writes this out as DX10 extension
 
             // No DXGI format maps to ISBITMASK(0x0f, 0x00, 0x00, 0xf0) aka D3DFMT_A4L4
             if (16 == ddpf.RGBBitCount)
             {
-                if (ISBITMASK(ddpf, 0x0000ffff, 0x00000000, 0x00000000, 0x00000000))
+                if (Isbitmask(ddpf, 0x0000ffff, 0x00000000, 0x00000000, 0x00000000))
                     return Format.R16_UNorm; // D3DX10/11 writes this out as DX10 extension
 
-                if (ISBITMASK(ddpf, 0x000000ff, 0x00000000, 0x00000000, 0x0000ff00))
+                if (Isbitmask(ddpf, 0x000000ff, 0x00000000, 0x00000000, 0x0000ff00))
                     return Format.R8G8_UNorm; // D3DX10/11 writes this out as DX10 extension
             }
         }
@@ -412,47 +412,47 @@ public class DDSReader
         }
         else if ((ddpf.flags & DDS_FOURCC) > 0)
         {
-            if (MAKEFOURCC('D', 'X', 'T', '1') == ddpf.fourCC)
+            if (Makefourcc('D', 'X', 'T', '1') == ddpf.fourCC)
                 return Format.BC1_UNorm;
 
-            if (MAKEFOURCC('D', 'X', 'T', '3') == ddpf.fourCC)
+            if (Makefourcc('D', 'X', 'T', '3') == ddpf.fourCC)
                 return Format.BC2_UNorm;
 
-            if (MAKEFOURCC('D', 'X', 'T', '5') == ddpf.fourCC)
+            if (Makefourcc('D', 'X', 'T', '5') == ddpf.fourCC)
                 return Format.BC3_UNorm;
 
             // While pre-mulitplied alpha isn't directly supported by the DXGI formats,
             // they are basically the same as these BC formats so they can be mapped
-            if (MAKEFOURCC('D', 'X', 'T', '2') == ddpf.fourCC)
+            if (Makefourcc('D', 'X', 'T', '2') == ddpf.fourCC)
                 return Format.BC2_UNorm;
 
-            if (MAKEFOURCC('D', 'X', 'T', '4') == ddpf.fourCC)
+            if (Makefourcc('D', 'X', 'T', '4') == ddpf.fourCC)
                 return Format.BC3_UNorm;
 
-            if (MAKEFOURCC('A', 'T', 'I', '1') == ddpf.fourCC)
+            if (Makefourcc('A', 'T', 'I', '1') == ddpf.fourCC)
                 return Format.BC4_UNorm;
 
-            if (MAKEFOURCC('B', 'C', '4', 'U') == ddpf.fourCC)
+            if (Makefourcc('B', 'C', '4', 'U') == ddpf.fourCC)
                 return Format.BC4_UNorm;
 
-            if (MAKEFOURCC('B', 'C', '4', 'S') == ddpf.fourCC)
+            if (Makefourcc('B', 'C', '4', 'S') == ddpf.fourCC)
                 return Format.BC4_SNorm;
 
-            if (MAKEFOURCC('A', 'T', 'I', '2') == ddpf.fourCC)
+            if (Makefourcc('A', 'T', 'I', '2') == ddpf.fourCC)
                 return Format.BC5_UNorm;
 
-            if (MAKEFOURCC('B', 'C', '5', 'U') == ddpf.fourCC)
+            if (Makefourcc('B', 'C', '5', 'U') == ddpf.fourCC)
                 return Format.BC5_UNorm;
 
-            if (MAKEFOURCC('B', 'C', '5', 'S') == ddpf.fourCC)
+            if (Makefourcc('B', 'C', '5', 'S') == ddpf.fourCC)
                 return Format.BC5_SNorm;
 
             // BC6H and BC7 are written using the "DX10" extended header
 
-            if (MAKEFOURCC('R', 'G', 'B', 'G') == ddpf.fourCC)
+            if (Makefourcc('R', 'G', 'B', 'G') == ddpf.fourCC)
                 return Format.R8G8_B8G8_UNorm;
 
-            if (MAKEFOURCC('G', 'R', 'G', 'B') == ddpf.fourCC)
+            if (Makefourcc('G', 'R', 'G', 'B') == ddpf.fourCC)
                 return Format.G8R8_G8B8_UNorm;
 
             // Check for D3DFORMAT enums being set here
@@ -499,9 +499,9 @@ public class DDSReader
 
     private static void FillInitData(Resource texture, int width, int height, int depth, int mipCount, int arraySize, Format format, int maxsize, int bitSize, byte[] bitData, int offset)
     {
-        var NumBytes = 0;
-        var RowBytes = 0;
-        var NumRows = 0;
+        var numBytes = 0;
+        var rowBytes = 0;
+        var numRows = 0;
         var pSrcBits = bitData;
         var pEndBits = bitData; // + bitSize;
 
@@ -516,16 +516,16 @@ public class DDSReader
             var d = depth;
             for (var i = 0; i < mipCount; i++)
             {
-                GetSurfaceInfo(w, h, format, out NumBytes, out RowBytes, out NumRows);
+                GetSurfaceInfo(w, h, format, out numBytes, out rowBytes, out numRows);
 
                 var handle = GCHandle.Alloc(bitData, GCHandleType.Pinned);
                 var ptr = Marshal.UnsafeAddrOfPinnedArrayElement(bitData, k);
-                texture.WriteToSubresource(index, null, ptr, RowBytes, NumBytes);
+                texture.WriteToSubresource(index, null, ptr, rowBytes, numBytes);
                 handle.Free();
 
                 index++;
 
-                k += NumBytes * d;
+                k += numBytes * d;
 
                 w = w >> 1;
                 h = h >> 1;
@@ -543,7 +543,7 @@ public class DDSReader
     }
 
 
-    private static Resource CreateTextureFromDDS(Device d3dDevice, DDS_HEADER header, DDS_HEADER_DXT10? header10, byte[] bitData, int offset, int maxsize, out bool isCubeMap)
+    private static Resource CreateTextureFromDds(Device d3dDevice, DdsHeader header, DdsHeaderDxt10? header10, byte[] bitData, int offset, int maxsize, out bool isCubeMap)
     {
         var width = header.width;
         var height = header.height;
@@ -558,20 +558,20 @@ public class DDSReader
         if (0 == mipCount)
             mipCount = 1;
 
-        if ((header.ddspf.flags & DDS_FOURCC) > 0 && MAKEFOURCC('D', 'X', '1', '0') == header.ddspf.fourCC)
+        if ((header.ddspf.flags & DDS_FOURCC) > 0 && Makefourcc('D', 'X', '1', '0') == header.ddspf.fourCC)
         {
-            var d3d10ext = header10.Value;
+            var d3d10Ext = header10.Value;
 
-            arraySize = d3d10ext.arraySize;
+            arraySize = d3d10Ext.arraySize;
             if (arraySize == 0)
                 throw new Exception();
 
-            if (BitsPerPixel(d3d10ext.dxgiFormat) == 0)
+            if (BitsPerPixel(d3d10Ext.dxgiFormat) == 0)
                 throw new Exception();
 
-            format = d3d10ext.dxgiFormat;
+            format = d3d10Ext.dxgiFormat;
 
-            switch ((ResourceDimension)d3d10ext.resourceDimension)
+            switch ((ResourceDimension)d3d10Ext.resourceDimension)
             {
                 case ResourceDimension.Texture1D:
                     // D3DX writes 1D textures with a fixed Height of 1
@@ -583,7 +583,7 @@ public class DDSReader
 
                 case ResourceDimension.Texture2D:
                     //D3D11_RESOURCE_MISC_TEXTURECUBE
-                    if ((d3d10ext.miscFlag & 0x4) > 0)
+                    if ((d3d10Ext.miscFlag & 0x4) > 0)
                     {
                         arraySize *= 6;
                         isCubeMap = true;
@@ -605,7 +605,7 @@ public class DDSReader
                     throw new Exception();
             }
 
-            resDim = (ResourceDimension)d3d10ext.resourceDimension;
+            resDim = (ResourceDimension)d3d10Ext.resourceDimension;
         }
         else
         {
@@ -665,14 +665,14 @@ public class DDSReader
     /// <param name="data">Data</param>
     /// <param name="isCubeMap">Is cubemap</param>
     /// <returns>Resource</returns>
-    public static Resource CreateTextureFromDDS(Device device, byte[] data, out bool isCubeMap)
+    public static Resource CreateTextureFromDds(Device device, byte[] data, out bool isCubeMap)
     {
         // Validate DDS file in memory
-        var header = new DDS_HEADER();
+        var header = new DdsHeader();
 
         var ddsHeaderSize = Marshal.SizeOf(header);
-        var ddspfSize = Marshal.SizeOf(new DDS_PIXELFORMAT());
-        var ddsHeader10Size = Marshal.SizeOf(new DDS_HEADER_DXT10());
+        var ddspfSize = Marshal.SizeOf(new DdsPixelformat());
+        var ddsHeader10Size = Marshal.SizeOf(new DdsHeaderDxt10());
 
         if (data.Length < sizeof(uint) + ddsHeaderSize)
             throw new Exception();
@@ -682,26 +682,26 @@ public class DDSReader
         if (dwMagicNumber != DDS_MAGIC)
             throw new Exception();
 
-        header = ByteArrayToStructure<DDS_HEADER>(data, 4, ddsHeaderSize);
+        header = ByteArrayToStructure<DdsHeader>(data, 4, ddsHeaderSize);
 
         // Verify header to validate DDS file
         if (header.size != ddsHeaderSize || header.ddspf.size != ddspfSize)
             throw new Exception();
 
         // Check for DX10 extension
-        DDS_HEADER_DXT10? dx10Header = null;
-        if ((header.ddspf.flags & DDS_FOURCC) > 0 && MAKEFOURCC('D', 'X', '1', '0') == header.ddspf.fourCC)
+        DdsHeaderDxt10? dx10Header = null;
+        if ((header.ddspf.flags & DDS_FOURCC) > 0 && Makefourcc('D', 'X', '1', '0') == header.ddspf.fourCC)
         {
             // Must be long enough for both headers and magic value
             if (data.Length < ddsHeaderSize + 4 + ddsHeader10Size)
                 throw new Exception();
 
-            dx10Header = ByteArrayToStructure<DDS_HEADER_DXT10>(data, 4 + ddsHeaderSize, ddsHeader10Size);
+            dx10Header = ByteArrayToStructure<DdsHeaderDxt10>(data, 4 + ddsHeaderSize, ddsHeader10Size);
         }
 
         var offset = 4 + ddsHeaderSize + (dx10Header.HasValue ? ddsHeader10Size : 0);
 
-        return CreateTextureFromDDS(device, header, dx10Header, data, offset, 0, out isCubeMap);
+        return CreateTextureFromDds(device, header, dx10Header, data, offset, 0, out isCubeMap);
     }
 
     /// <summary>
@@ -713,6 +713,6 @@ public class DDSReader
     public static Resource ImportTexture(Device device, string filename)
     {
         bool isCube;
-        return CreateTextureFromDDS(device, File.ReadAllBytes(filename), out isCube);
+        return CreateTextureFromDds(device, File.ReadAllBytes(filename), out isCube);
     }
 }

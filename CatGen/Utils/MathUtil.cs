@@ -57,7 +57,7 @@ public static class MathHelper
         (float)Math.Atan(d);
 
     /// <inheritdoc cref="Math.Atan2"/>
-    public static float Atan2f(double y, double x) =>
+    public static float Atan2F(double y, double x) =>
         (float)Math.Atan2(y, x);
 
     /// <inheritdoc cref="Math.Acos"/>
@@ -75,7 +75,7 @@ public static class MathHelper
     /// <summary>
     /// Каст в Matrix из Numerics
     /// </summary>
-    public static Matrix4x4 ToMatrix4x4(Matrix matrix)
+    public static Matrix4x4 ToMatrix4X4(Matrix matrix)
     {
         return new Matrix4x4(
             matrix.M11, matrix.M12, matrix.M13, matrix.M14,
@@ -109,7 +109,7 @@ public static class MathHelper
     /// <summary>
     /// Каст в SharpDX.Vector2
     /// </summary>
-    public static SharpDX.Vector2 ToVector2SharpDX(this System.Numerics.Vector2 vector)
+    public static SharpDX.Vector2 ToVector2SharpDx(this System.Numerics.Vector2 vector)
     {
         return new SharpDX.Vector2(vector.X, vector.Y);
     }
@@ -125,7 +125,7 @@ public static class MathHelper
     /// <summary>
     /// Каст в SharpDX.Vector3
     /// </summary>
-    public static SharpDX.Vector3 ToVector3SharpDX(this System.Numerics.Vector3 vector)
+    public static SharpDX.Vector3 ToVector3SharpDx(this System.Numerics.Vector3 vector)
     {
         return new SharpDX.Vector3(vector.X, vector.Y, vector.Z);
     }
@@ -133,7 +133,7 @@ public static class MathHelper
     /// <summary>
     /// Каст в SharpDX.Vector3
     /// </summary>
-    public static SharpDX.Vector3 ToVector3SharpDX(this SharpDX.Vector4 vector)
+    public static SharpDX.Vector3 ToVector3SharpDx(this SharpDX.Vector4 vector)
     {
         return new SharpDX.Vector3(vector.X, vector.Y, vector.Z);
     }

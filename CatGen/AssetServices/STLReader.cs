@@ -12,7 +12,7 @@ namespace CatGen.Unifiers;
 /// <summary>
 /// Класс для импорта моделей в формате STL
 /// </summary>
-public static class STLReader
+public static class StlReader
 {
     /// <summary>
     /// Импортирует только геометрию

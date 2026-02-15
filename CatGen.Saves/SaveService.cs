@@ -1,39 +1,62 @@
 ﻿using CatGen.DTOs;
 
+using Microsoft.EntityFrameworkCore;
+
 namespace CatGen.Saves;
 
 public static class SaveService
 {
-    private static readonly SaveContext _context = new SaveContext();
+    static SaveService()
+    {
+        _сontext = new SaveContext();
+
+        _сontext.Database.Migrate();
+    }
+
+    private static readonly SaveContext _сontext;
+
+    // это неправильно, но мне пох
+    private static readonly Lock _contextLock = new();
 
     public static List<ModelOnDisk> GetModelsOnDisk()
     {
-        return _context.ModelsOnDisk.ToList();
+        lock (_contextLock)
+        {
+            return _сontext.ModelsOnDisk.ToList();
+        }
     }
 
-    public static List<SpawnedObjectMetadata> GetSpawnedObjects()
+    public static List<SpawnedEntityMetadata> GetSpawnedEntities()
     {
-        return _context.SpawnedObjects.ToList();
+        lock (_contextLock)
+        {
+            return _сontext.SpawnedEntities.ToList();
+        }
     }
 
     public static void Save(List<ModelOnDisk> models)
     {
-        var oldModels = GetModelsOnDisk();
+        lock (_contextLock)
+        {
+            var oldModels = GetModelsOnDisk();
 
-        _context.ModelsOnDisk.RemoveRange(oldModels);
-        _context.SaveChanges();
-        _context.ModelsOnDisk.AddRange(models);
-        _context.SaveChanges();
+            _сontext.ModelsOnDisk.RemoveRange(oldModels);
+            _сontext.SaveChanges();
+            _сontext.ModelsOnDisk.AddRange(models);
+            _сontext.SaveChanges();
+        }
     }
 
-    public static void Save(List<SpawnedObjectMetadata> spawnedObjects)
+    public static void Save(List<SpawnedEntityMetadata> spawnedObjects)
     {
-        var oldObjects = GetSpawnedObjects();
+        lock (_contextLock)
+        {
+            var oldObjects = GetSpawnedEntities();
 
-        _context.SpawnedObjects.RemoveRange(oldObjects);
-        _context.SaveChanges();
-        _context.SpawnedObjects.AddRange(spawnedObjects);
-        _context.SaveChanges();
-
+            _сontext.SpawnedEntities.RemoveRange(oldObjects);
+            _сontext.SaveChanges();
+            _сontext.SpawnedEntities.AddRange(spawnedObjects);
+            _сontext.SaveChanges();
+        }
     }
 }

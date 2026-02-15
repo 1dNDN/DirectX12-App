@@ -21,7 +21,7 @@ public static class TextureUtil
     /// <param name="device">Device</param>
     /// <param name="texture">Texture</param>
     /// <returns></returns>
-    public static Resource CreateTextureFromPNG(Device device, Image texture)
+    public static Resource CreateTextureFromPng(Device device, Image texture)
     {
         using var textureStream = texture.Content.Open();
 

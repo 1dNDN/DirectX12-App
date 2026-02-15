@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 
 using Point = SharpDX.Point;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace CatGen;
 
@@ -11,6 +12,13 @@ namespace CatGen;
 /// </summary>
 public class BaseWindow : IDisposable
 {
+    /// <summary>
+    /// Конструктор
+    /// </summary>
+    public BaseWindow()
+    {
+        Timer = new GameTimer();
+    }
     /// <summary>
     /// Заголовок окна
     /// </summary>
@@ -64,7 +72,7 @@ public class BaseWindow : IDisposable
     /// <summary>
     /// Часы рендеринга
     /// </summary>
-    public GameTimer Timer { get; } = new GameTimer();
+    public GameTimer Timer { get; set; }
 
     /// <summary>
     /// Последнее состояние окна Windows Forms

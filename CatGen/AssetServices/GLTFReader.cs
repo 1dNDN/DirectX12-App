@@ -19,14 +19,16 @@ namespace CatGen.Unifiers;
 /// <summary>
 /// Импортирует модель GLTF
 /// </summary>
-public class GLTFReader
+public class GltfReader
 {
+    private static Dictionary<string, ModelRoot> _modelCache = new Dictionary<string, ModelRoot>();
+
     /// <summary>
     /// Импортирует модель GLTF
     /// </summary>
     public static MeshData ImportGeometry(string filepath)
     {
-        var model = ModelRoot.Load(filepath);
+        var model = Load(filepath);
 
         var scene = model.DefaultScene; //TODO: стоит учесть, что может быть 0 сцен и N сцен
 
@@ -41,16 +43,45 @@ public class GLTFReader
         return mesh;
     }
 
-    //TODO: сделать умный путь, а не эту хуйню
+    /// <summary>
+    /// Импортирует Primary текстурку для модели GLTF
+    /// </summary>
+    /// <param name="filepath"></param>
+    /// <returns></returns>
     public static (Image texture, TextureSampler sampler) ImportTexture(string filepath)
     {
-        var model = ModelRoot.Load(filepath);
+        var model = Load(filepath);
 
         var logicalTexture = model.LogicalTextures.First();
         var texture = logicalTexture.PrimaryImage;
         var sampler = logicalTexture.Sampler;
 
         return (texture, sampler);
+    }
+
+    public static Material ImportMaterial(string filepath)
+    {
+        var model = Load(filepath);
+        var logicalMaterial = model.LogicalMaterials.First();
+
+        var diffuseAlbedo = (Vector4)logicalMaterial.FindChannel("BaseColor")?.Color.ToVector4Numerics()!;
+
+        //TODO: переработать модель рендеринга согласно PBRT, сейчас используем константу 0.04 для диэлектриков
+        var fresnelR0 = new Vector3(0.04f);
+        var roughness = (float)logicalMaterial
+            .FindChannel("MetallicRoughness")
+            ?.Parameters
+            .FirstOrDefault(p => string.Equals(p.Name, "RoughnessFactor", StringComparison.InvariantCultureIgnoreCase))
+            ?.Value!;
+
+        return new Material(diffuseAlbedo, fresnelR0, roughness);
+    }
+
+    private static ModelRoot Load(string filepath)
+    {
+        return _modelCache.TryGetValue(filepath, out var value) ?
+            value :
+            ModelRoot.Load(filepath);
     }
 
     private static void LoadNode(MeshData meshData, Node node, Matrix parentTransform)
@@ -89,8 +120,8 @@ public class GLTFReader
     private static void AddVertex(MeshData meshData, IAccessorArray<System.Numerics.Vector3> positions, IAccessorArray<System.Numerics.Vector3> normals, IAccessorArray<System.Numerics.Vector4> tangents, IAccessorArray<System.Numerics.Vector2> texCoords, int index, Matrix parentTransform)
     {
         var position = SharpDX.Vector3
-            .Transform(positions[index].ToVector3SharpDX(), parentTransform)
-            .ToVector3SharpDX();
+            .Transform(positions[index].ToVector3SharpDx(), parentTransform)
+            .ToVector3SharpDx();
 
         SharpDX.Vector3 normal;
         if (normals == null)
@@ -99,7 +130,7 @@ public class GLTFReader
         }
         else
         {
-            normal = SharpDX.Vector3.TransformNormal(normals[index].ToVector3SharpDX(), parentTransform);
+            normal = SharpDX.Vector3.TransformNormal(normals[index].ToVector3SharpDx(), parentTransform);
             normal.Normalize();
         }
 
@@ -123,7 +154,7 @@ public class GLTFReader
         }
         else
         {
-            textureCoordinate = texCoords[index].ToVector2SharpDX();
+            textureCoordinate = texCoords[index].ToVector2SharpDx();
         }
 
         var vertex = new BiggaVertex(position, normal, tangent, textureCoordinate);
