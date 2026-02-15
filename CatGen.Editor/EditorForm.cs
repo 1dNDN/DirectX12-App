@@ -132,7 +132,7 @@ public partial class EditorForm : Form
         if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             return;
 
-        ParentApp.DespawnObject(item);
+        ParentApp.DespawnEntity(item);
         _spawnedObjectsDataGridView.Rows.RemoveAt(row.Index);
 
         Dirtyfy();
@@ -163,7 +163,7 @@ public partial class EditorForm : Form
 
         item.X = (float)xAxisUpDown.Value;
         _spawnedObjectsDataGridView.Invalidate();
-        ParentApp.UpdateObject(item);
+        ParentApp.UpdateEntity(item);
 
         Dirtyfy();
     }
@@ -179,7 +179,7 @@ public partial class EditorForm : Form
 
         item.Y = (float)yAxisUpDown.Value;
         _spawnedObjectsDataGridView.Invalidate();
-        ParentApp.UpdateObject(item);
+        ParentApp.UpdateEntity(item);
 
         Dirtyfy();
     }
@@ -195,7 +195,7 @@ public partial class EditorForm : Form
 
         item.Z = (float)zAxisUpDown.Value;
         _spawnedObjectsDataGridView.Invalidate();
-        ParentApp.UpdateObject(item);
+        ParentApp.UpdateEntity(item);
 
         Dirtyfy();
     }

@@ -270,7 +270,7 @@ public class SceneResourcesService : IDisposable
     /// Деспавнит сущность из сцены
     /// </summary>
     /// <param name="item"></param>
-    public void DespawnObject(SpawnedEntityMetadata item)
+    public void DespawnEntity(SpawnedEntityMetadata item)
     {
     }
 
@@ -278,7 +278,7 @@ public class SceneResourcesService : IDisposable
     /// Обновляет параметры сущности на сцене
     /// </summary>
     /// <param name="item"></param>
-    public void UpdateObject(SpawnedEntityMetadata item)
+    public void UpdateEntity(SpawnedEntityMetadata item)
     {
     }
 

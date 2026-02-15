@@ -41,4 +41,8 @@
     <ProjectReference Include="..\CatGen.Editor\CatGen.Editor.csproj" />
     <ProjectReference Include="..\CatGen.Interfaces\CatGen.Interfaces.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Shaders\Default.hlsl" />
+    <ClCompile Include="Shaders\LightingUtil.hlsl" />
+  </ItemGroup>
 </Project>

@@ -10,7 +10,7 @@ public interface IRenderEngine
 
     void SpawnObject(SpawnedEntityMetadata spawnedObject);
 
-    void DespawnObject(SpawnedEntityMetadata item);
+    void DespawnEntity(SpawnedEntityMetadata item);
 
-    void UpdateObject(SpawnedEntityMetadata item);
+    void UpdateEntity(SpawnedEntityMetadata item);
 }

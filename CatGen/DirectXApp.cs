@@ -145,16 +145,11 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
         Camera.Position = new Vector3(0.0f, 2.0f, -5.0f);
 
-        // BuildTextures(); TODO: удалить
         BuildScene();
         BuildRootSignature();
         BuildDescriptorHeaps();
         BuildShadersAndInputLayout();
-        // BuildShapesAndGeometry(); TODO: удалить
-        // BuildMaterials();TODO: удалить
-        // BuildRenderItems();TODO: удалить
         BuildFrameResources();
-        // BuildConstantBufferViews();
         BuildPSOs();
 
         RenderCommandList.Close();
@@ -418,90 +413,6 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     }
 
-    // private void BuildConstantBufferViews()
-    // {
-    //     var objectConstantBufferSizeInBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
-    //
-    //     for (var frameIndex = 0; frameIndex < NumFrameResources; frameIndex++)
-    //     {
-    //         var objectConstantBuffer = Frames[frameIndex].ObjectConstantBuffer.Resource;
-    //
-    //         for (var i = 0; i < SceneItems.Count; i++)
-    //         {
-    //             var cbAddress = objectConstantBuffer.GPUVirtualAddress;
-    //
-    //             // Offset to the ith object constant buffer in the buffer.
-    //             cbAddress += i * objectConstantBufferSizeInBytes;
-    //
-    //             // Offset to the object cbv in the descriptor heap.
-    //             var heapIndex = frameIndex * SceneItems.Count + i;
-    //             var handle = CbvHeap.CPUDescriptorHandleForHeapStart;
-    //             handle += heapIndex * CbvSrvUavDescriptorSize;
-    //
-    //             var cbvDesc = new ConstantBufferViewDescription
-    //             {
-    //                 BufferLocation = cbAddress,
-    //                 SizeInBytes = objectConstantBufferSizeInBytes
-    //             };
-    //
-    //             RenderDevice.CreateConstantBufferView(cbvDesc, handle);
-    //
-    //         }
-    //     }
-    //
-    //     var passConstantBufferByteSize = BufferUtil.CalcConstantBufferByteSize<PassConstants>();
-    //
-    //     // Last three descriptors are the pass CBVs for each frame resource.
-    //     for (var frameIndex = 0; frameIndex < NumFrameResources; frameIndex++)
-    //     {
-    //         var passConstantBuffer = Frames[frameIndex].PassConstantBuffer.Resource;
-    //         var cbAddress = passConstantBuffer.GPUVirtualAddress;
-    //
-    //         // Offset to the pass cbv in the descriptor heap.
-    //         var heapIndex = _passCbvOffset + frameIndex;
-    //         var handle = CbvHeap.CPUDescriptorHandleForHeapStart;
-    //         handle += heapIndex * CbvSrvUavDescriptorSize;
-    //
-    //         var cbvDesc = new ConstantBufferViewDescription
-    //         {
-    //             BufferLocation = cbAddress,
-    //             SizeInBytes = passConstantBufferByteSize
-    //         };
-    //
-    //         RenderDevice.CreateConstantBufferView(cbvDesc, handle);
-    //     }
-    // }
-
-    /* TODO: выпилить
-
-    private void BuildTextures()
-    {
-        AddGltfTexture(TexturesEnum.Duck, "./Models/Duck/glTF-Embedded/Duck.gltf");
-        AddDdsTexture(TexturesEnum.Semitransparent, "./Models/DDSTextures/water1.dds");
-        AddDdsTexture(TexturesEnum.Fence, "./Models/DDSTextures/WireFence.dds");
-    }
-
-    void AddGltfTexture(TexturesEnum name, string path)
-    {
-        var (img, sampler) = GLTFReader.ImportTexture(path);
-        var texture = new Texture
-        {
-            Resource = TextureUtil.CreateTextureFromPNG(this.RenderDevice, img),
-        };
-
-        Textures[name] = texture;
-    }
-
-    private void AddDdsTexture(TexturesEnum name, string path)
-    {
-        var texture = new Texture
-        {
-            Resource = DDSReader.ImportTexture(this.RenderDevice, path),
-        };
-
-        Textures[name] = texture;
-    }*/
-
     private void BuildScene()
     {
         Scene.AddModels(SaveService.GetModelsOnDisk());
@@ -520,15 +431,14 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
         // Root parameter can be a table, root descriptor or root constants.
 
-        var textureTable = new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0);
-
-        // Create a single descriptor table of CBVs.
-        var descriptor1 = new RootDescriptor(0, 0);
-        var descriptor2 = new RootDescriptor(1, 0);
-        var descriptor3 = new RootDescriptor(2, 0);
-
         // A root signature is an array of root parameters.
-        var slotRootParameters = new[] { new RootParameter(ShaderVisibility.Pixel, textureTable), new RootParameter(ShaderVisibility.Vertex, descriptor1, RootParameterType.ConstantBufferView), new RootParameter(ShaderVisibility.All, descriptor2, RootParameterType.ConstantBufferView), new RootParameter(ShaderVisibility.All, descriptor3, RootParameterType.ConstantBufferView) };
+        var slotRootParameters = new[]
+        {
+            new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
+            new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
+            new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
+            new RootParameter(ShaderVisibility.All, new RootDescriptor(2, 0), RootParameterType.ConstantBufferView),
+        };
 
         var rootSigDesc = new RootSignatureDescription(
             RootSignatureFlags.AllowInputAssemblerInputLayout,
@@ -591,59 +501,21 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     private void BuildShadersAndInputLayout()
     {
-        ShaderMacro[] defines = { new ShaderMacro("FOG", "0") };
-
-        ShaderMacro[] alphaTestDefines = { new ShaderMacro("FOG", "0"), new ShaderMacro("ALPHA_TEST", "1") };
+        // ShaderMacro[] defines = { new ShaderMacro("FOG", "0") };
+        //
+        // ShaderMacro[] alphaTestDefines = { new ShaderMacro("FOG", "0"), new ShaderMacro("ALPHA_TEST", "1") };
 
         VertexShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0");
-        PixelShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", defines);
-        PixelAlphatestdShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
-
-        ShaderInputLayout = new InputLayoutDescription(new[] { new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0), new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0), new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0) });
+        PixelShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0");
+        // PixelAlphatestdShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
+        ShaderInputLayout = new InputLayoutDescription(
+        [
+            new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
+                new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
+                new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
+        ]);
     }
 
-    /*
-     TODO: удалить
-
-    private void BuildShapesAndGeometry()
-    {
-        var vertices = new List<BiggaVertex>();
-        var indices = new List<int>();
-
-        var box = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateBox(1.5f, 0.5f, 1.5f, 3), vertices, indices);
-        var grid = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40), vertices, indices);
-        var sphere = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateSphere(0.5f, 20, 20), vertices, indices);
-        var cylinder = GeometryGenerator.AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.5f, 3.0f, 20, 20), vertices, indices);
-        var jenjina = GeometryGenerator.AppendMeshData(OBJReader.Import("./Models/jenjina.obj"), vertices, indices);
-        var superbox = GeometryGenerator.AppendMeshData(GLTFReader.ImportGeometry("./Models/BoxTextured/glTF-Embedded/BoxTextured.gltf"), vertices, indices);
-        var duck = GeometryGenerator.AppendMeshData(GLTFReader.ImportGeometry("./Models/Duck/glTF-Embedded/Duck.gltf"), vertices, indices);
-
-        var bigDragon = GeometryGenerator.AppendMeshData(STLReader.Import("./Models/big_dragon.stl"), vertices, indices);
-
-        var geo = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), GeometryEnum.Duck);
-
-        geo.DrawArgs[MeshEnum.Box] = box;
-        geo.DrawArgs[MeshEnum.Grid] = grid;
-        geo.DrawArgs[MeshEnum.Sphere] = sphere;
-        geo.DrawArgs[MeshEnum.Cylinder] = cylinder;
-        geo.DrawArgs[MeshEnum.Jenjina] = jenjina;
-        geo.DrawArgs[MeshEnum.Superbox] = superbox;
-        geo.DrawArgs[MeshEnum.Duck] = duck;
-        geo.DrawArgs[MeshEnum.BigDragon] = bigDragon;
-
-        Geometries[geo.Name] = geo;
-
-        var geo2 = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), GeometryEnum.Fence);
-
-        geo2.DrawArgs[MeshEnum.Box] = box;
-        Geometries[geo2.Name] = geo2;
-
-        var geo3 = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), GeometryEnum.Semitransparent);
-
-        geo3.DrawArgs[MeshEnum.Grid] = grid;
-        Geometries[geo3.Name] = geo3;
-    }
-*/
     private void BuildFrameResources()
     {
         for (var i = 0; i < NumFrameResources; i++)
@@ -653,182 +525,6 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         }
     }
 
-    /*
-
-    TODO: delete
-
-    [SuppressMessage("ReSharper", "RedundantAssignment")]
-    private void BuildMaterials()
-    {
-        // AddMaterial(new Material
-        // {
-        //     Name = "bricks0",
-        //     MaterialCBIndex = 0,
-        //     DiffuseSrvHeapIndex = 0,
-        //     DiffuseAlbedo = Color.ForestGreen.ToVector4(),
-        //     FresnelR0 = new Vector3(0.02f),
-        //     Roughness = 0.1f
-        // });
-        // AddMaterial(new Material
-        // {
-        //     Name = "stone0",
-        //     MaterialCBIndex = 1,
-        //     DiffuseSrvHeapIndex = 1,
-        //     DiffuseAlbedo = Color.LightSteelBlue.ToVector4(),
-        //     FresnelR0 = new Vector3(0.05f),
-        //     Roughness = 0.3f
-        // });
-        // AddMaterial(new Material
-        // {
-        //     Name = "tile0",
-        //     MaterialCBIndex = 2,
-        //     DiffuseSrvHeapIndex = 2,
-        //     DiffuseAlbedo = Color.LightGray.ToVector4(),
-        //     FresnelR0 = new Vector3(0.02f),
-        //     Roughness = 0.2f
-        // });
-        // AddMaterial(new Material
-        // {
-        //     Name = "jenjinaMat",
-        //     MaterialCBIndex = 3,
-        //     DiffuseSrvHeapIndex = 3,
-        //     DiffuseAlbedo = Color.BlueViolet.ToVector4(),
-        //     FresnelR0 = new Vector3(0.05f),
-        //     Roughness = 0.3f
-        // });
-        // AddMaterial(new Material
-        // {
-        //     Name = "superbox",
-        //     MaterialCBIndex = 4,
-        //     DiffuseSrvHeapIndex = 4,
-        //     DiffuseAlbedo = Color.PaleGreen.ToVector4(),
-        //     FresnelR0 = new Vector3(0.5f),
-        //     Roughness = 0.9f
-        // });
-        // AddMaterial(new Material
-        // {
-        //     Name = "big_dragon",
-        //     MaterialCBIndex = 5,
-        //     DiffuseSrvHeapIndex = 5,
-        //     DiffuseAlbedo = Color.PaleGreen.ToVector4(),
-        //     FresnelR0 = new Vector3(0.5f),
-        //     Roughness = 0.9f
-        // });
-
-        var materialIndex = 0;
-        AddMaterial(
-            new Material()
-            {
-                Name = MaterialsEnum.Duck,
-                DiffuseAlbedo = Color.White.ToVector4(),
-                FresnelR0 = new Vector3(0.05f),
-                Roughness = 0.2f,
-            },
-            ref materialIndex);
-
-        AddMaterial(
-            new Material()
-            {
-                Name = MaterialsEnum.Semitransparent,
-                DiffuseAlbedo = new Vector4(1.0f, 1.0f, 1.0f, 0.5f),
-                FresnelR0 = new Vector3(0.1f),
-                Roughness = 0.0f,
-            },
-            ref materialIndex);
-
-        AddMaterial(
-            new Material()
-            {
-                Name = MaterialsEnum.Fence,
-                DiffuseAlbedo = new Vector4(1.0f),
-                FresnelR0 = new Vector3(0.1f),
-                Roughness = 0.25f,
-            },
-            ref materialIndex);
-    }
-
-    private void AddMaterial(Material mat, ref int materialIndex)
-    {
-        mat.MaterialCBIndex = materialIndex;
-        mat.DiffuseSrvHeapIndex = materialIndex;
-        Materials[mat.Name] = mat;
-
-        materialIndex++;
-    }*/
-
-
-    /*
-
-     TODO: удалить
-
-    [SuppressMessage("ReSharper", "RedundantAssignment")]
-    private void BuildRenderItems()
-    {
-        var itemIndex = 0;
-
-        AddRenderItem(
-            RenderLayer.Opaque,
-            ref itemIndex,
-            MaterialsEnum.Duck,
-            GeometryEnum.Duck,
-            MeshEnum.Duck,
-            Matrix.Translation(0.0f, 0.0f, 0.0f) * Matrix.Scaling(1.0F) * Matrix.RotationYawPitchRoll(0.0F, -float.Pi / 2, float.Pi));
-
-        AddRenderItem(
-            RenderLayer.Transparent,
-            ref itemIndex,
-            MaterialsEnum.Semitransparent,
-            GeometryEnum.Semitransparent,
-            MeshEnum.Grid,
-            Matrix.Translation(0.0F, 0.0F, 0.0F));
-
-        AddRenderItem(
-            RenderLayer.AlphaTested,
-            ref itemIndex,
-            MaterialsEnum.Fence,
-            GeometryEnum.Fence,
-            MeshEnum.Box,
-            Matrix.Translation(-3.0F, 0.0F, 0.0F));
-
-        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "jenjinaMat", "baseGeometry", "jenjina",
-        //     Matrix.Translation(0.0f, 0.0f, 0.0f) *
-        //     Matrix.Scaling(4.0F) *
-        //     Matrix.RotationYawPitchRoll(0.0F, -float.Pi/2, float.Pi));
-
-        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "big_dragon", "baseGeometry", "big_dragon",
-        //     Matrix.Translation(0.0f, 0.0f, 0.0f) *
-        //     Matrix.Scaling(2.0F) *
-        //     Matrix.RotationYawPitchRoll(0.0F, -float.Pi/2, float.Pi));
-
-        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(0.0f, 0.5f, 0.0f) * huiTranslation);
-        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(2.0f, 0.5f, 0.0f) * huiTranslation);
-        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "cylinder", Matrix.Translation(1.0f, 1.5f, 0.0f) * huiTranslation);
-        // AddRenderItem(RenderLayer.Opaque, itemIndex++, "baseGeometry", "sphere", Matrix.Translation(1.0f, 3.0f, 0.0f) * huiTranslation);
-    }
-    private void AddRenderItem(RenderLayer layer, ref int objConstantBufferIndex, MaterialsEnum matName, GeometryEnum geoName, MeshEnum submeshName, Matrix? world = null)
-    {
-        var geo = Geometries[geoName];
-        var submesh = geo.DrawArgs[submeshName];
-        var renderItem = new RenderItem
-        {
-            ObjCBIndex = objConstantBufferIndex,
-            Geo = geo,
-            IndexCount = submesh.IndexCount,
-            StartIndexLocation = submesh.StartIndexLocation,
-            BaseVertexLocation = submesh.BaseVertexLocation,
-            World = submesh.World * world ?? Matrix.Identity,
-            Mat = Materials[matName],
-        };
-
-        if (!SceneItemLayers.ContainsKey(layer))
-            SceneItemLayers[layer] = [];
-
-        SceneItemLayers[layer].Add(renderItem);
-        SceneItems.Add(renderItem);
-        objConstantBufferIndex++;
-    }
-
-*/
     private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
     {
         var objectCbSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
@@ -883,31 +579,31 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
         PSOs[PSOEnum.OpaqueWireframe] = RenderDevice.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
 
-        var transparentPsoDesc = opaquePsoDesc.Copy();
-
-        var transparencyBlendDesc = new RenderTargetBlendDescription
-        {
-            IsBlendEnabled = true,
-            LogicOpEnable = false,
-            SourceBlend = BlendOption.SourceAlpha,
-            DestinationBlend = BlendOption.InverseSourceAlpha,
-            BlendOperation = BlendOperation.Add,
-            SourceAlphaBlend = BlendOption.One,
-            DestinationAlphaBlend = BlendOption.Zero,
-            AlphaBlendOperation = BlendOperation.Add,
-            LogicOp = LogicOperation.Noop,
-            RenderTargetWriteMask = ColorWriteMaskFlags.All
-        };
-
-        transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
-
-        PSOs[PSOEnum.Transparent] = RenderDevice.CreateGraphicsPipelineState(transparentPsoDesc);
-
-        var alphaTestedPsoDesc = opaquePsoDesc.Copy();
-        alphaTestedPsoDesc.PixelShader = PixelAlphatestdShaderByteCode;
-        alphaTestedPsoDesc.RasterizerState.CullMode = CullMode.None;
-
-        PSOs[PSOEnum.AlphaTested] = RenderDevice.CreateGraphicsPipelineState(alphaTestedPsoDesc);
+        // var transparentPsoDesc = opaquePsoDesc.Copy();
+        //
+        // var transparencyBlendDesc = new RenderTargetBlendDescription
+        // {
+        //     IsBlendEnabled = true,
+        //     LogicOpEnable = false,
+        //     SourceBlend = BlendOption.SourceAlpha,
+        //     DestinationBlend = BlendOption.InverseSourceAlpha,
+        //     BlendOperation = BlendOperation.Add,
+        //     SourceAlphaBlend = BlendOption.One,
+        //     DestinationAlphaBlend = BlendOption.Zero,
+        //     AlphaBlendOperation = BlendOperation.Add,
+        //     LogicOp = LogicOperation.Noop,
+        //     RenderTargetWriteMask = ColorWriteMaskFlags.All
+        // };
+        //
+        // transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
+        //
+        // PSOs[PSOEnum.Transparent] = RenderDevice.CreateGraphicsPipelineState(transparentPsoDesc);
+        //
+        // var alphaTestedPsoDesc = opaquePsoDesc.Copy();
+        // alphaTestedPsoDesc.PixelShader = PixelAlphatestdShaderByteCode;
+        // alphaTestedPsoDesc.RasterizerState.CullMode = CullMode.None;
+        //
+        // PSOs[PSOEnum.AlphaTested] = RenderDevice.CreateGraphicsPipelineState(alphaTestedPsoDesc);
     }
 
     /// <inheritdoc />
@@ -929,28 +625,33 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         base.Dispose();
     }
 
+    /// <inheritdoc cref="SceneResourcesService.AddModel"/>
     public void AddModel(ModelOnDisk path)
     {
         Scene.AddModel(path);
     }
 
+    /// <inheritdoc cref="SceneResourcesService.DeleteModel"/>
     public void DeleteModel(ModelOnDisk item)
     {
         Scene.DeleteModel(item);
     }
 
+    /// <inheritdoc cref="SceneResourcesService.SpawnEntity"/>
     public void SpawnObject(SpawnedEntityMetadata spawnedObject)
     {
         Scene.SpawnEntity(spawnedObject);
     }
 
-    public void DespawnObject(SpawnedEntityMetadata item)
+    /// <inheritdoc cref="SceneResourcesService.DespawnEntity"/>
+    public void DespawnEntity(SpawnedEntityMetadata item)
     {
-        Scene.DespawnObject(item);
+        Scene.DespawnEntity(item);
     }
 
-    public void UpdateObject(SpawnedEntityMetadata item)
+    /// <inheritdoc cref="SceneResourcesService.UpdateEntity"/>
+    public void UpdateEntity(SpawnedEntityMetadata item)
     {
-        Scene.UpdateObject(item);
+        Scene.UpdateEntity(item);
     }
 }

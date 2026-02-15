@@ -12,17 +12,14 @@ public class Material
         DiffuseAlbedo = diffuseAlbedo;
         FresnelR0 = fresnelR0;
         Roughness = roughness;
-    }
 
-    public Material()
-    {
-
+        if (roughness > 0.99F)
+            Roughness = 0.99F;
     }
 
     /// <summary>
     /// Уникальное имя материала для поиска
     /// </summary>
-    public MaterialsEnum Name { get; set; }
     public string NameStr { get; set; }
 
     /// <summary>

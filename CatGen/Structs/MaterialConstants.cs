@@ -22,7 +22,7 @@ public struct MaterialConstants
     /// </summary>
     public float Roughness;
 
-    // Used in texture mapping.
+    /// Used in texture mapping.
     public Matrix MatTransform;
 
     /// <summary>
