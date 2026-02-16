@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 using CatGen.AssetServices;
 using CatGen.Unifiers;
@@ -138,6 +139,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             Application.Run(new EditorForm(this));
         });
 
+        _editorThread.IsBackground = true;
         _editorThread.SetApartmentState(ApartmentState.STA);
         _editorThread.Start();
 
@@ -226,6 +228,9 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// <inheritdoc />
     protected override void Update(GameTimer timer)
     {
+        if(!_editorThread.IsAlive)
+            (Process.GetCurrentProcess()).Kill();
+
         Camera.Update();
 
         CurrentFrameIndex = (CurrentFrameIndex + 1) % NumFrameResources;
