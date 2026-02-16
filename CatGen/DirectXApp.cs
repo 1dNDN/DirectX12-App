@@ -220,6 +220,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         // Because we are on the GPU timeline, the new fence point won't be
         // set until the GPU finishes processing all the commands prior to this Signal().
         RenderCommandQueue.Signal(RenderFence, CurrentFence);
+        Scene.SceneLock.ExitReadLock();
     }
 
     /// <inheritdoc />
@@ -237,9 +238,50 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             CurrentFenceEvent.WaitOne();
         }
 
+        var dirty = Scene.Update(ResetCommandList);
+        // TODO: убрать эту порнографию с делегатом
+
+        Scene.SceneLock.EnterReadLock();
+        if (dirty)
+        {
+            UpdateDescriptorHeaps();
+            UpdateFrameResources();
+
+            RenderCommandList.Close();
+            RenderCommandQueue.ExecuteCommandList(RenderCommandList);
+
+            FlushCommandQueue();
+        }
+
         UpdateObjectCBs();
         UpdateMaterialCBs();
         UpdateMainPassCb(timer);
+    }
+
+    private void ResetCommandList()
+    {
+        FlushCommandQueue();
+
+        RenderDirectCmdListAlloc.Reset();
+        RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
+    }
+
+    private void UpdateDescriptorHeaps()
+    {
+        SrvDescriptorHeap.Dispose();
+
+        BuildDescriptorHeaps();
+    }
+
+    private void UpdateFrameResources()
+    {
+        foreach (var frameResource in Frames)
+            frameResource.Dispose();
+
+        Frames.Clear();
+        FenceEvents.Clear();
+
+        BuildFrameResources();
     }
 
     private void UpdateObjectCBs()
@@ -377,7 +419,6 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// </summary>
     private void BuildDescriptorHeaps()
     {
-        //TODO
         var srvHeapDesc = new DescriptorHeapDescription
         {
             DescriptorCount = Scene.Textures.Count,
@@ -649,9 +690,9 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         Scene.DespawnEntity(item);
     }
 
-    /// <inheritdoc cref="SceneResourcesService.UpdateEntity"/>
-    public void UpdateEntity(SpawnedEntityMetadata item)
+    /// <inheritdoc cref="SceneResourcesService.EditEntity"/>
+    public void EditEntity(SpawnedEntityMetadata item)
     {
-        Scene.UpdateEntity(item);
+        Scene.EditEntity(item);
     }
 }

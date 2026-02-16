@@ -92,10 +92,20 @@ public partial class EditorForm : Form
 
     private void deleteButton_Click(object sender, EventArgs e)
     {
-        foreach (DataGridViewRow row in _modelsListDataGridView.SelectedRows)
+        for (var j = 0; j < _modelsListDataGridView.SelectedRows.Count; j++)
         {
+            var row = _modelsListDataGridView.SelectedRows[j];
             if (row.DataBoundItem is ModelOnDisk boundItem)
+            {
                 ParentApp.DeleteModel(boundItem);
+
+                for (var i = _spawnedObjectBinding.Count - 1; i >= 0; i--)
+                {
+                    var entity = _spawnedObjectBinding[i] as SpawnedEntityMetadata;
+                    if (entity?.ModelOnDiskId == boundItem.Id)
+                        _spawnedObjectBinding.Remove(entity);
+                }
+            }
 
             _modelsListDataGridView.Rows.RemoveAt(row.Index);
         }
@@ -128,6 +138,9 @@ public partial class EditorForm : Form
 
     private void despawnButton_Click(object sender, EventArgs e)
     {
+        if (_spawnedObjectBinding.Count <= 1)
+            return;
+
         var row = _spawnedObjectsDataGridView.CurrentRow;
         if (row?.DataBoundItem is not SpawnedEntityMetadata item)
             return;
@@ -163,7 +176,7 @@ public partial class EditorForm : Form
 
         item.X = (float)xAxisUpDown.Value;
         _spawnedObjectsDataGridView.Invalidate();
-        ParentApp.UpdateEntity(item);
+        ParentApp.EditEntity(item);
 
         Dirtyfy();
     }
@@ -179,7 +192,7 @@ public partial class EditorForm : Form
 
         item.Y = (float)yAxisUpDown.Value;
         _spawnedObjectsDataGridView.Invalidate();
-        ParentApp.UpdateEntity(item);
+        ParentApp.EditEntity(item);
 
         Dirtyfy();
     }
@@ -195,7 +208,7 @@ public partial class EditorForm : Form
 
         item.Z = (float)zAxisUpDown.Value;
         _spawnedObjectsDataGridView.Invalidate();
-        ParentApp.UpdateEntity(item);
+        ParentApp.EditEntity(item);
 
         Dirtyfy();
     }

@@ -60,4 +60,12 @@ public class Material
     public float Roughness { get; set; } = 0.25f;
 
     public Matrix MatTransform { get; set; } = Matrix.Identity;
+
+    /// <summary>
+    /// Надо обновить буфер констант во всех кадрах
+    /// </summary>
+    public void Dirty()
+    {
+        NumFramesDirty = BaseDirectXWindow.NumFrameResources;
+    }
 }

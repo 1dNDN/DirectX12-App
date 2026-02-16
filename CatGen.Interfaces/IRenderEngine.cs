@@ -12,5 +12,5 @@ public interface IRenderEngine
 
     void DespawnEntity(SpawnedEntityMetadata item);
 
-    void UpdateEntity(SpawnedEntityMetadata item);
+    void EditEntity(SpawnedEntityMetadata item);
 }

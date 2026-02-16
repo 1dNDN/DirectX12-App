@@ -74,15 +74,59 @@ public class SceneResourcesService : IDisposable
     /// </summary>
     public GraphicsCommandList RenderCommandList;
 
-    //TODO: сделать поддержку редактирования в реальном времени
+    /// <summary>
+    /// Лок для изменений сцены
+    /// </summary>
+    public readonly ReaderWriterLockSlim SceneLock = new();
+
+    private bool _dirty = true;
+
     /// <summary>
     /// Загрузить все модели и объекты
     /// </summary>
     public void Load()
     {
-        LoadModels();
-        LoadMaterials();
-        BuildScene();
+        SceneLock.EnterWriteLock();
+        try
+        {
+            LoadModels();
+            LoadMaterials();
+            BuildScene();
+
+            _dirty = false;
+        }
+        finally
+        {
+            SceneLock.ExitWriteLock();
+        }
+    }
+
+    /// <summary>
+    /// Проверяет, надо ли перестраивать буферы. Если надо - делает это.
+    /// </summary>
+    /// <param name="resetCommandList"></param>
+    /// <returns>Есть ли изменения</returns>
+    public bool Update(Action resetCommandList)
+    {
+        SceneLock.EnterWriteLock();
+        try
+        {
+            if (!_dirty)
+                return false;
+
+            resetCommandList();
+
+            UpdateModels();
+            UpdateMaterials();
+            UpdateScene();
+
+            _dirty = false;
+            return true;
+        }
+        finally
+        {
+            SceneLock.ExitWriteLock();
+        }
     }
 
     /// <summary>
@@ -138,6 +182,16 @@ public class SceneResourcesService : IDisposable
     }
 
     /// <summary>
+    /// Если список моделей изменился - грузит их заново с диска
+    /// </summary>
+    private void UpdateModels()
+    {
+        Geometry.Dispose();
+
+        LoadModels();
+    }
+
+    /// <summary>
     /// Грузит материалы и текстуры
     /// </summary>
     public void LoadMaterials()
@@ -165,6 +219,20 @@ public class SceneResourcesService : IDisposable
                 AddMaterial(material);
             }
         }
+    }
+
+    /// <summary>
+    /// Если материалы изменились - грузит заново
+    /// </summary>
+    private void UpdateMaterials()
+    {
+        foreach (var texture in Textures)
+            texture.Value.Dispose();
+
+        Textures.Clear();
+        Materials.Clear();
+
+        LoadMaterials();
     }
 
     /// <summary>
@@ -217,6 +285,17 @@ public class SceneResourcesService : IDisposable
     }
 
     /// <summary>
+    /// Если что-то поменялось в составе ресурсов - грузит сцену заново
+    /// </summary>
+    private void UpdateScene()
+    {
+        SceneItems.Clear();
+        SceneItemLayers.Clear();
+
+        BuildScene();
+    }
+
+    /// <summary>
     /// Создаёт матрицу мира для модели
     /// </summary>
     /// <param name="entity"></param>
@@ -246,7 +325,16 @@ public class SceneResourcesService : IDisposable
     /// <param name="path"></param>
     public void AddModel(ModelOnDisk path)
     {
-        ModelsPaths.Add(path);
+        SceneLock.EnterWriteLock();
+        try
+        {
+            ModelsPaths.Add(path);
+            Dirty();
+        }
+        finally
+        {
+            SceneLock.ExitWriteLock();
+        }
     }
 
     /// <summary>
@@ -254,7 +342,31 @@ public class SceneResourcesService : IDisposable
     /// </summary>
     /// <param name="item"></param>
     public void DeleteModel(ModelOnDisk item)
-    {}
+    {
+        SceneLock.EnterWriteLock();
+        try
+        {
+            var oldItem = ModelsPaths.FirstOrDefault(m => m.Id == item.Id);
+
+            if (oldItem == null)
+                return;
+
+            ModelsPaths.Remove(oldItem);
+
+            for (var i = EntitiesMetadata.Count - 1; i >= 0; i--)
+            {
+                var entity = EntitiesMetadata[i];
+                if (entity.ModelOnDiskId == oldItem.Id)
+                    EntitiesMetadata.Remove(entity);
+            }
+
+            Dirty();
+        }
+        finally
+        {
+            SceneLock.ExitWriteLock();
+        }
+    }
 
     /// <summary>
     /// Спавнит сущности на сцене
@@ -263,9 +375,7 @@ public class SceneResourcesService : IDisposable
     public void SpawnEntities(List<SpawnedEntityMetadata> entities)
     {
         foreach (var entity in entities)
-        {
             SpawnEntity(entity);
-        }
     }
 
     /// <summary>
@@ -274,7 +384,17 @@ public class SceneResourcesService : IDisposable
     /// <param name="entity"></param>
     public void SpawnEntity(SpawnedEntityMetadata entity)
     {
-        this.EntitiesMetadata.Add(entity);
+
+        SceneLock.EnterWriteLock();
+        try
+        {
+            this.EntitiesMetadata.Add(entity);
+            Dirty();
+        }
+        finally
+        {
+            SceneLock.ExitWriteLock();
+        }
     }
 
     /// <summary>
@@ -283,38 +403,70 @@ public class SceneResourcesService : IDisposable
     /// <param name="item"></param>
     public void DespawnEntity(SpawnedEntityMetadata item)
     {
+        SceneLock.EnterWriteLock();
+        try
+        {
+            var oldEntity = EntitiesMetadata.FirstOrDefault(e => e.Id == item.Id);
+
+            if (oldEntity == null)
+                return;
+
+            EntitiesMetadata.Remove(oldEntity);
+
+            Dirty();
+        }
+        finally
+        {
+            SceneLock.ExitWriteLock();
+        }
     }
 
     /// <summary>
     /// Обновляет параметры сущности на сцене
     /// </summary>
     /// <param name="item"></param>
-    public void UpdateEntity(SpawnedEntityMetadata item)
+    public void EditEntity(SpawnedEntityMetadata item)
     {
-        var oldItem = EntitiesMetadata.FirstOrDefault(e => e.Id == item.Id);
-
-        // вообще наверное всегда должно быть заспавнено, если есть что обновлять
-        if (oldItem == null)
+        SceneLock.EnterWriteLock();
+        try
         {
-            EntitiesMetadata.Add(item);
+            var oldItem = EntitiesMetadata.FirstOrDefault(e => e.Id == item.Id);
 
-            return;
+            // вообще наверное всегда должно быть заспавнено, если есть что обновлять
+            if (oldItem == null)
+            {
+                EntitiesMetadata.Add(item);
+
+                return;
+            }
+
+            oldItem.X = item.X;
+            oldItem.Y = item.Y;
+            oldItem.Z = item.Z;
+            oldItem.Pitch = item.Pitch;
+            oldItem.Roll = item.Roll;
+            oldItem.Yaw = item.Yaw;
+            oldItem.Scale = item.Scale;
+
+            var renderItem = SceneItems.FirstOrDefault(e => e.EntityId == item.Id);
+
+            if (renderItem == null)
+                return;
+
+            renderItem.BaseWorld = CreateWorldMatrix(oldItem);
         }
+        finally
+        {
+            SceneLock.ExitWriteLock();
+        }
+    }
 
-        oldItem.X = item.X;
-        oldItem.Y = item.Y;
-        oldItem.Z = item.Z;
-        oldItem.Pitch = item.Pitch;
-        oldItem.Roll = item.Roll;
-        oldItem.Yaw = item.Yaw;
-        oldItem.Scale = item.Scale;
-
-        var renderItem = SceneItems.FirstOrDefault(e => e.EntityId == item.Id);
-
-        if (renderItem == null)
-            return;
-
-        renderItem.BaseWorld = CreateWorldMatrix(oldItem);
+    /// <summary>
+    /// Есть изменения в составе ресурсов. Внимание: сущности за матрицей мира следят самостоятельно!
+    /// </summary>
+    private void Dirty()
+    {
+        _dirty = true;
     }
 
     /// <inheritdoc />
