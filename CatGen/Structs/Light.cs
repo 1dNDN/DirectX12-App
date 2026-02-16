@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 using SharpDX;
 
@@ -24,7 +23,7 @@ public struct Light
         Direction = -Vector3.UnitY,
         FalloffEnd = 10.0f,
         Position = Vector3.Zero,
-        SpotPower = 64.0f
+        SpotPower = 64.0f,
     };
 
     public static Light[] DefaultArray => Enumerable.Repeat(Default, MaxLights).ToArray();

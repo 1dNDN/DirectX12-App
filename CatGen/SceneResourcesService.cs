@@ -5,6 +5,7 @@ using CatGen.Utils;
 using SharpDX;
 using SharpDX.Direct3D12;
 
+#pragma warning disable CA1822
 namespace CatGen;
 
 /// <summary>
@@ -34,22 +35,22 @@ public class SceneResourcesService : IDisposable
     /// <summary>
     /// Материалы для геометрий сцены
     /// </summary>
-    public Dictionary<string, Material> Materials { get; set; } = new();
+    public Dictionary<string, Material> Materials { get; } = new();
 
     /// <summary>
     /// Текстуры для геометрий сцены
     /// </summary>
-    public Dictionary<string, Texture> Textures { get; set; } = new();
+    public Dictionary<string, Texture> Textures { get; } = new();
 
     /// <summary>
     /// Список путей используемых 3д моделей
     /// </summary>
-    public List<ModelOnDisk> ModelsPaths { get; set; } = [];
+    public List<ModelOnDisk> ModelsPaths { get; } = [];
 
     /// <summary>
     /// Список заспавненных сущностей
     /// </summary>
-    public List<SpawnedEntityMetadata> EntitiesMetadata { get; set; } = [];
+    public List<SpawnedEntityMetadata> EntitiesMetadata { get; } = [];
 
     /// <summary>
     /// Список всех объектов геометрии сцены
@@ -67,12 +68,12 @@ public class SceneResourcesService : IDisposable
     /// <summary>
     /// Адаптер, на котором будем рендерить
     /// </summary>
-    public Device RenderDevice;
+    public readonly Device RenderDevice;
 
     /// <summary>
     /// Список команд для GPU
     /// </summary>
-    public GraphicsCommandList RenderCommandList;
+    public readonly GraphicsCommandList RenderCommandList;
 
     /// <summary>
     /// Лок для изменений сцены
@@ -204,7 +205,7 @@ public class SceneResourcesService : IDisposable
 
             if (extention.Equals(".gltf", StringComparison.InvariantCultureIgnoreCase))
             {
-                var (img, sampler) = GltfReader.ImportTexture(modelPath.FilePath);
+                var (img, _) = GltfReader.ImportTexture(modelPath.FilePath);
 
                 var texture = new Texture
                 {
@@ -476,5 +477,7 @@ public class SceneResourcesService : IDisposable
 
         foreach (var texture in Textures.Values)
             texture.Dispose();
+
+        GC.SuppressFinalize(this);
     }
 }

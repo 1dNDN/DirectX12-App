@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-using SharpDX;
+﻿using SharpDX;
 using SharpDX.D3DCompiler;
 using SharpDX.Direct3D;
 

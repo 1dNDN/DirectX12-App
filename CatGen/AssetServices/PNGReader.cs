@@ -1,7 +1,4 @@
-﻿using System.Drawing;
-using System.Linq;
-
-namespace CatGen.AssetServices;
+﻿namespace CatGen.AssetServices;
 
 public class PNGReader
 {

@@ -33,6 +33,6 @@ public struct MaterialConstants
         DiffuseAlbedo = Vector4.One,
         FresnelR0 = new Vector3(0.01f),
         Roughness = 0.25f,
-        MatTransform = Matrix.Identity
+        MatTransform = Matrix.Identity,
     };
 }

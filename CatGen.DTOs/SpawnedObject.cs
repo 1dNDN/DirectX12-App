@@ -10,9 +10,9 @@ public record SpawnedEntityMetadata
         Scale = 1;
     }
 
-    public string Id { get; set; }
+    public string Id { get; init; }
 
-    public string ModelOnDiskId { get; set; }
+    public string ModelOnDiskId { get; init; }
 
     public float X { get; set; }
 

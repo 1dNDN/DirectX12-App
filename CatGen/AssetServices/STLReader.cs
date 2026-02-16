@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-using CatGen.Utils;
+﻿using CatGen.Utils;
 
 using SharpDX;
 

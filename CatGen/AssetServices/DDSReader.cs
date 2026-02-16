@@ -1,13 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 
 using Device = SharpDX.Direct3D12.Device;
 using Resource = SharpDX.Direct3D12.Resource;
+#pragma warning disable CS8605 // Unboxing a possibly null value.
 
 namespace CatGen.AssetServices;
 

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using SharpDX;
+﻿using SharpDX;
 
 namespace CatGen.Utils;
 
@@ -111,8 +107,8 @@ public static class GeometryGenerator
         // Create the indices.
         //
 
-        meshData.Indices.AddRange(new[]
-        {
+        meshData.Indices.AddRange(
+        [
             // Fill in the front face index data.
             0, 1, 2, 0, 2, 3,
             // Fill in the back face index data.
@@ -124,8 +120,8 @@ public static class GeometryGenerator
             // Fill in the left face index data
             16, 17, 18, 16, 18, 19,
             // Fill in the right face index data
-            20, 21, 22, 20, 22, 23
-        });
+            20, 21, 22, 20, 22, 23,
+        ]);
 
         // Put a cap on the number of subdivisions.
         numSubdivisions = Math.Min(numSubdivisions, 6);

@@ -1,7 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading;
-using System.Windows.Forms;
 
 using SharpDX;
 using SharpDX.Direct3D;

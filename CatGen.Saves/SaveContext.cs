@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CatGen.Saves;
 
-public class SaveContext : DbContext
+public sealed class SaveContext : DbContext
 {
     public DbSet<ModelOnDisk> ModelsOnDisk => Set<ModelOnDisk>();
 

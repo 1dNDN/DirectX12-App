@@ -1,11 +1,6 @@
-﻿using System;
-using System.Linq;
-
-using ObjParser;
+﻿using ObjParser;
 
 using CatGen.Utils;
-
-using SharpDX;
 
 namespace CatGen.Unifiers;
 

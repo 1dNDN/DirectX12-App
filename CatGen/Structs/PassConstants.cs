@@ -41,6 +41,6 @@ public struct PassConstants
         NearZ = 1.0f,
         FarZ = 1000.0f,
         AmbientLight = Vector4.UnitW,
-        Lights = Light.DefaultArray
+        Lights = Light.DefaultArray,
     };
 }

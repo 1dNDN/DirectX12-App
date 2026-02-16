@@ -30,7 +30,7 @@ public partial class EditorForm : Form
         _spawnedObjectBinding.DataSource = _spawnedObjects;
         _spawnedObjectsDataGridView.DataSource = _spawnedObjectBinding;
 
-        var modelsFolderName = "Models";
+        const string modelsFolderName = "Models";
 
         _openModelFileDialog.InitialDirectory = Path.Combine(Directory.GetCurrentDirectory(), modelsFolderName);
 
@@ -54,9 +54,9 @@ public partial class EditorForm : Form
     /// </summary>
     public readonly IRenderEngine ParentApp;
 
-    private readonly List<ModelOnDisk> _models = new();
+    private readonly List<ModelOnDisk> _models = [];
 
-    private readonly List<SpawnedEntityMetadata> _spawnedObjects = new();
+    private readonly List<SpawnedEntityMetadata> _spawnedObjects = [];
 
     private void LoadModelFileButton_Click(object sender, EventArgs e)
     {
@@ -230,9 +230,9 @@ public partial class EditorForm : Form
                 zAxisUpDown.Enabled = false;
                 objectNameTextBox1.Enabled = false;
 
-                xAxisUpDown.Value = (decimal)0;
-                yAxisUpDown.Value = (decimal)0;
-                zAxisUpDown.Value = (decimal)0;
+                xAxisUpDown.Value = 0;
+                yAxisUpDown.Value = 0;
+                zAxisUpDown.Value = 0;
                 objectNameTextBox1.Text = string.Empty;
 
                 return;
@@ -253,6 +253,7 @@ public partial class EditorForm : Form
         }
         catch (Exception ex)
         {
+            _ = ex;
             // игнорим ошибку при закрытии
         }
     }

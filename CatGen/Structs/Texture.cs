@@ -1,6 +1,4 @@
-﻿using System;
-
-using SharpDX.Direct3D12;
+﻿using SharpDX.Direct3D12;
 
 namespace CatGen;
 

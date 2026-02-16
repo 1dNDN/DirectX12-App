@@ -4,10 +4,10 @@ namespace CatGen.Common;
 
 public static class IdGenerator
 {
-    private static IHashids hashids = new Hashids("CG", 0, "abcdefghijklmnopqrstuvwxyz1234567890", "cfhistu");  //MLHIDE
+    private static readonly Hashids _hashids = new("CG", 0, "abcdefghijklmnopqrstuvwxyz1234567890", "cfhistu");
 
     public static string NewGuid()
     {
-        return hashids.EncodeLong(Math.Abs(DateTime.Now.Ticks));
+        return _hashids.EncodeLong(Math.Abs(DateTime.Now.Ticks));
     }
 }

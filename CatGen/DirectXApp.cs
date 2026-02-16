@@ -1,8 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-using CatGen.AssetServices;
-using CatGen.Unifiers;
 using CatGen.Utils;
 
 using CatGen.DTOs;
@@ -11,7 +9,6 @@ using CatGen.Interfaces;
 using CatGen.Saves;
 
 using SharpDX;
-using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 
@@ -19,6 +16,7 @@ using Color = SharpDX.Color;
 using Point = SharpDX.Point;
 using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimension;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+#pragma warning disable CA1822
 
 namespace CatGen;
 
@@ -34,11 +32,6 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     {
         Camera = new Camera(Timer);
     }
-
-    /// <summary>
-    /// Куча для дескрипторов Constant Buffer
-    /// </summary>
-    protected DescriptorHeap CbvHeap { get; set; }
 
     /// <summary>
     /// Куча для дескрипторов Shader Resource View
@@ -75,11 +68,6 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// Байткод скомпилированного пиксельного шейдера
     /// </summary>
     private ShaderBytecode PixelShaderByteCode { get; set; }
-
-    /// <summary>
-    /// Байткод скомпилированного пиксельного шейдера
-    /// </summary>
-    private ShaderBytecode PixelAlphatestdShaderByteCode { get; set; }
 
     /// <summary>
     /// Состояния графического пайплайна
@@ -139,8 +127,8 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             Application.Run(new EditorForm(this));
         });
 
-        _editorThread.IsBackground = true;
         _editorThread.SetApartmentState(ApartmentState.STA);
+        _editorThread.IsBackground = true;
         _editorThread.Start();
 
         RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
@@ -229,7 +217,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     protected override void Update(GameTimer timer)
     {
         if(!_editorThread.IsAlive)
-            (Process.GetCurrentProcess()).Kill();
+            Process.GetCurrentProcess().Kill();
 
         Camera.Update();
 
@@ -302,7 +290,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                 var objConstants = new ObjectConstants
                 {
                     World = Matrix.Transpose(e.World),
-                    TexTransform = Matrix.Transpose(e.TexTransform)
+                    TexTransform = Matrix.Transpose(e.TexTransform),
                 };
 
                 CurrentFrameResource.ObjectConstantBuffer.CopyData(e.ObjCbIndex, ref objConstants);
@@ -428,14 +416,14 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         {
             DescriptorCount = Scene.Textures.Count,
             Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
-            Flags = DescriptorHeapFlags.ShaderVisible
+            Flags = DescriptorHeapFlags.ShaderVisible,
         };
 
         SrvDescriptorHeap = RenderDevice.CreateDescriptorHeap(srvHeapDesc);
         DescriptorHeaps = [SrvDescriptorHeap];
 
         var descriptorHandle = SrvDescriptorHeap.CPUDescriptorHandleForHeapStart;
-        var srvDescription = new ShaderResourceViewDescription()
+        var srvDescription = new ShaderResourceViewDescription
         {
             Shader4ComponentMapping = TextureUtil.DefaultShader4ComponentMapping,
             Dimension = ShaderResourceViewDimension.Texture2D,
@@ -505,25 +493,25 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressUVW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap,
             },
             // PointClamp
             new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressUVW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp,
             },
             // LinearWrap
             new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressUVW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap,
             },
             // LinearClamp
             new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressUVW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp,
             },
             // AnisotropicWrap
             new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
@@ -531,7 +519,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                 Filter = Filter.Anisotropic,
                 AddressUVW = TextureAddressMode.Wrap,
                 MipLODBias = 0.0f,
-                MaxAnisotropy = 8
+                MaxAnisotropy = 8,
             },
             // AnisotropicClamp
             new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
@@ -539,7 +527,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                 Filter = Filter.Anisotropic,
                 AddressUVW = TextureAddressMode.Clamp,
                 MipLODBias = 0.0f,
-                MaxAnisotropy = 8
+                MaxAnisotropy = 8,
             },
         ];
     }
@@ -614,9 +602,11 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             RenderTargetCount = 1,
             SampleDescription = new SampleDescription(MsaaCount, MsaaQuality),
             DepthStencilFormat = DepthStencilFormat,
+            RenderTargetFormats =
+            {
+                [0] = this.BackBufferFormat,
+            },
         };
-
-        opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
         PSOs[PSOEnum.Opaque] = RenderDevice.CreateGraphicsPipelineState(opaquePsoDesc);
 
@@ -655,9 +645,8 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// <inheritdoc />
     public override void Dispose()
     {
-        SrvDescriptorHeap?.Dispose();
-        RenderRootSignature?.Dispose();
-        CbvHeap?.Dispose();
+        SrvDescriptorHeap.Dispose();
+        RenderRootSignature.Dispose();
         foreach (var frameResource in Frames)
             frameResource.Dispose();
 
