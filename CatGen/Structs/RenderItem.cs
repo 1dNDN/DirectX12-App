@@ -1,5 +1,7 @@
 ﻿using SharpDX;
 using SharpDX.Direct3D;
+// ReSharper disable ArrangeAccessorOwnerBody
+// ReSharper disable PropertyCanBeMadeInitOnly.Global
 
 namespace CatGen;
 
@@ -9,9 +11,48 @@ namespace CatGen;
 public class RenderItem
 {
     /// <summary>
-    /// Матрица, описывающая объект относительно мира. В частности, позицию, направление и масштаб
+    /// ID энтити, которое рендерим
     /// </summary>
-    public Matrix World { get; set; } = Matrix.Identity;
+    public string EntityId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Матрица, описывающая сущность относительно мира. Произведение матрицы мира сабмеша на матрицу мира сущности
+    /// </summary>
+    public Matrix World => _world ??= SubmeshWorld * BaseWorld;
+
+    private Matrix? _world;
+    private Matrix _submeshWorld = Matrix.Identity;
+    private Matrix _baseWorld = Matrix.Identity;
+
+    /// <summary>
+    /// Матрица, описывающая сабмеш относительно мира. В частности, позицию, направление и масштаб
+    /// </summary>
+    public Matrix SubmeshWorld
+    {
+        get {
+            return _submeshWorld;
+        }
+        set {
+            _world = null;
+            _submeshWorld = value;
+            Dirty();
+        }
+    }
+
+    /// <summary>
+    /// Матрица, описывающая саму сущность относительно мира. В частности, позицию, направление и масштаб
+    /// </summary>
+    public Matrix BaseWorld
+    {
+        get {
+            return _baseWorld;
+        }
+        set {
+            _world = null;
+            _baseWorld = value;
+            Dirty();
+        }
+    }
 
     public Matrix TexTransform { get; set; } = Matrix.Identity;
 
@@ -60,4 +101,12 @@ public class RenderItem
     /// Место, где начинаются вертексы геометрии в буфере
     /// </summary>
     public int BaseVertexLocation { get; set; }
+
+    /// <summary>
+    /// Объект изменился, теперь он дёрти и надо грузить снова
+    /// </summary>
+    public void Dirty()
+    {
+        NumFramesDirty = BaseDirectXWindow.NumFrameResources;
+    }
 }

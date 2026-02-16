@@ -192,7 +192,7 @@ public class BaseDirectXWindow : BaseWindow
     /// <summary>
     /// Число кадров для буферизации (двойной, тройной)
     /// </summary>
-    protected internal const int NumFrameResources = 3;
+    public const int NumFrameResources = 3;
 
     /// <inheritdoc/>
     public override void Init()

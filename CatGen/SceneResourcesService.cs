@@ -191,19 +191,18 @@ public class SceneResourcesService : IDisposable
         {
             var submesh = Geometry.DrawArgs[entity.ModelOnDiskId];
 
-            var world = Matrix.Translation(entity.X, entity.Y, entity.Z)
-                * Matrix.Scaling(entity.Scale)
-                * Matrix.RotationYawPitchRoll(entity.Yaw, entity.Pitch, entity.Roll)
-                ;
+            var world = CreateWorldMatrix(entity);
 
             var renderItem = new RenderItem
             {
+                EntityId = entity.Id,
                 ObjCbIndex = SceneItems.Count,
                 Geo = Geometry,
                 IndexCount = submesh.IndexCount,
                 StartIndexLocation = submesh.StartIndexLocation,
                 BaseVertexLocation = submesh.BaseVertexLocation,
-                World = submesh.World * world,
+                SubmeshWorld = submesh.World,
+                BaseWorld = world,
                 Mat = Materials[entity.ModelOnDiskId],
             };
 
@@ -215,6 +214,18 @@ public class SceneResourcesService : IDisposable
             SceneItemLayers[layer].Add(renderItem);
             SceneItems.Add(renderItem);
         }
+    }
+
+    /// <summary>
+    /// Создаёт матрицу мира для модели
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <returns></returns>
+    private static Matrix CreateWorldMatrix(SpawnedEntityMetadata entity)
+    {
+        return Matrix.Translation(entity.X, entity.Y, entity.Z)
+               * Matrix.Scaling(entity.Scale)
+               * Matrix.RotationYawPitchRoll(entity.Yaw, entity.Pitch, entity.Roll);
     }
 
     /// <summary>
@@ -280,6 +291,30 @@ public class SceneResourcesService : IDisposable
     /// <param name="item"></param>
     public void UpdateEntity(SpawnedEntityMetadata item)
     {
+        var oldItem = EntitiesMetadata.FirstOrDefault(e => e.Id == item.Id);
+
+        // вообще наверное всегда должно быть заспавнено, если есть что обновлять
+        if (oldItem == null)
+        {
+            EntitiesMetadata.Add(item);
+
+            return;
+        }
+
+        oldItem.X = item.X;
+        oldItem.Y = item.Y;
+        oldItem.Z = item.Z;
+        oldItem.Pitch = item.Pitch;
+        oldItem.Roll = item.Roll;
+        oldItem.Yaw = item.Yaw;
+        oldItem.Scale = item.Scale;
+
+        var renderItem = SceneItems.FirstOrDefault(e => e.EntityId == item.Id);
+
+        if (renderItem == null)
+            return;
+
+        renderItem.BaseWorld = CreateWorldMatrix(oldItem);
     }
 
     /// <inheritdoc />
