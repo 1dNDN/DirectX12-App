@@ -113,6 +113,11 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     private Thread _editorThread = null!;
 
+    /// <summary>
+    /// Признак того, что запустились с пустой базой, а такое мы рисовать не умеем.
+    /// </summary>
+    private bool DryRun = false;
+
     /// <inheritdoc />
     [MemberNotNull(nameof(Editor))]
     public override void Init()
@@ -131,11 +136,17 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         _editorThread.IsBackground = true;
         _editorThread.Start();
 
+
         RenderCommandList.Reset(RenderDirectCmdListAlloc, null);
 
         Camera.Position = new Vector3(0.0f, 2.0f, -5.0f);
 
         BuildScene();
+
+        DryRun = Scene.EntitiesMetadata.Count == 0;
+        if (DryRun)
+            return;
+
         BuildRootSignature();
         BuildDescriptorHeaps();
         BuildShadersAndInputLayout();
@@ -151,6 +162,9 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     /// <inheritdoc />
     protected override void Draw(GameTimer gameTimer)
     {
+        if (DryRun)
+            return;
+
         var cmdListAlloc = CurrentFrameResource.CmdListAlloc;
 
         // Reuse the memory associated with command recording.
@@ -218,6 +232,9 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     {
         if(!_editorThread.IsAlive)
             Process.GetCurrentProcess().Kill();
+
+        if (DryRun)
+            return;
 
         Camera.Update();
 

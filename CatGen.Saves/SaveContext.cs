@@ -12,7 +12,7 @@ public sealed class SaveContext : DbContext
 
     public SaveContext()
     {
-        Database.EnsureCreated();
+        // Database.EnsureCreated();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
