@@ -5,7 +5,7 @@ namespace CatGen;
 /// <summary>
 /// Материал поверхности, описывающий отражаемость света от неё
 /// </summary>
-public class Material
+public class Material : Dirtyable
 {
     public Material(Vector4 diffuseAlbedo,
         float fresnelR0,
@@ -64,12 +64,6 @@ public class Material
     public int NormalSrvHeapIndex { get; set; } = -1;
 
     /// <summary>
-    /// Флаг, показывающий, что данные объекта изменились и нужно обновить буфер констант в каждом кадре.
-    /// Таким образом, <c>NumFramesDirty = BaseDirectXWindow.NumFrameResources</c> при любом изменении.
-    /// </summary>
-    public int NumFramesDirty { get; set; } = BaseDirectXWindow.NumFrameResources;
-
-    /// <summary>
     /// Коэффициент отражаемости поверхности
     /// </summary>
     public Vector4 DiffuseAlbedo { get; set; }
@@ -121,12 +115,4 @@ public class Material
     public float OcclusionStrength { get; set; }
 
     public Matrix MatTransform { get; set; } = Matrix.Identity;
-
-    /// <summary>
-    /// Надо обновить буфер констант во всех кадрах
-    /// </summary>
-    public void Dirty()
-    {
-        NumFramesDirty = BaseDirectXWindow.NumFrameResources;
-    }
 }

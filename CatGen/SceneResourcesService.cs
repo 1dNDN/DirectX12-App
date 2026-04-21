@@ -199,6 +199,7 @@ public class SceneResourcesService : IDisposable
         Textures.Clear();
         Materials.Clear();
 
+        Prefabs.Clear();
 
         LoadScenes();
     }

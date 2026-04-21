@@ -69,7 +69,7 @@ public class SceneData
     /// <summary>
     /// Матрица нормализованного мира объекта. Центрирует объект в 0,0,0 и выставляет масштаб так, что размер 1.
     /// </summary>
-    public Matrix NormalizedWorld => Matrix.Translation(-AvgLocation) * Matrix.Scaling(1 / Size);
+    public Matrix NormalizedWorld => Matrix.Translation(-AvgLocation) * Matrix.Scaling(5 / Size);
 
     public List<NodeData> Nodes { get; } = [];
 
