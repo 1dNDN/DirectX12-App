@@ -1,5 +1,15 @@
-using CatGen;
+using System.Text;
 
-var app = new DirectXApp();
-app.Init();
-app.Run();
+using CatGen;
+Console.OutputEncoding = Encoding.UTF8;
+
+try
+{
+    var app = new DirectXApp();
+    app.Init();
+    app.Run();
+}
+catch (Exception ex)
+{
+    Console.WriteLine(ex);
+}

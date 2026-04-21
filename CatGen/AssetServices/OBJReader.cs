@@ -14,12 +14,12 @@ public static class ObjReader
     /// </summary>
     /// <param name="objPath">Путь до объекта</param>
     /// <returns>Геометрия объекта</returns>
-    public static MeshData Import(string objPath)
+    public static NodeData Import(string objPath)
     {
         var obj = new ObjModel();
         obj.Load(objPath);
 
-        var mesh = new MeshData();
+        var mesh = new NodeData();
 
         for (var i = 0; i < obj.Vertices.Count; i++)
         {

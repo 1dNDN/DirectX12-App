@@ -319,7 +319,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     private void UpdateMaterialCBs()
     {
-        foreach (var mat in Scene.Materials.Values)
+        foreach (var mat in Scene.Materials)
         {
             // Only update the cbuffer data if the constants have changed. If the cbuffer
             // data changes, it needs to be updated for each FrameResource.
@@ -576,7 +576,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         }
     }
 
-    private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
+    private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderEntity> ritems)
     {
         var objectCbSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
         var materialCbSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
@@ -585,21 +585,22 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         var materialCb = CurrentFrameResource.MaterialConstantBuffer.Resource;
 
         foreach (var item in ritems)
+        foreach (var mesh in item.EntityModel.SubMeshes)
         {
-            cmdList.SetVertexBuffer(0, item.Geo.VertexBufferView);
-            cmdList.SetIndexBuffer(item.Geo.IndexBufferView);
-            cmdList.PrimitiveTopology = item.PrimitiveType;
+            cmdList.SetVertexBuffer(0, item.EntityModel.Geo.VertexBufferView);
+            cmdList.SetIndexBuffer(item.EntityModel.Geo.IndexBufferView);
+            cmdList.PrimitiveTopology = mesh.PrimitiveType;
 
-            var textureHandle = SrvDescriptorHeap.GPUDescriptorHandleForHeapStart + item.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
+            var textureHandle = SrvDescriptorHeap.GPUDescriptorHandleForHeapStart + mesh.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
 
             var objectCbAddress = objectCb.GPUVirtualAddress + item.ObjCbIndex * objectCbSizeBytes;
-            var materialCbAddress = materialCb.GPUVirtualAddress + item.Mat.MaterialCbIndex * materialCbSizeBytes;
+            var materialCbAddress = materialCb.GPUVirtualAddress + mesh.Mat.MaterialCbIndex * materialCbSizeBytes;
 
             cmdList.SetGraphicsRootDescriptorTable(0, textureHandle);
             cmdList.SetGraphicsRootConstantBufferView(1, objectCbAddress);
             cmdList.SetGraphicsRootConstantBufferView(3, materialCbAddress);
 
-            cmdList.DrawIndexedInstanced(item.IndexCount, 1, item.StartIndexLocation, item.BaseVertexLocation, 0);
+            cmdList.DrawIndexedInstanced(mesh.IndexCount, 1, mesh.StartIndexLocation, mesh.BaseVertexLocation, 0);
         }
     }
 
@@ -624,6 +625,9 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                 [0] = this.BackBufferFormat,
             },
         };
+
+        // для поддержки gltf
+        opaquePsoDesc.RasterizerState.CullMode = CullMode.Front;
 
         PSOs[PSOEnum.Opaque] = RenderDevice.CreateGraphicsPipelineState(opaquePsoDesc);
 

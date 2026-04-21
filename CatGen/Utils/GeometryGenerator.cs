@@ -5,9 +5,9 @@ namespace CatGen.Utils;
 public static class GeometryGenerator
 {
 
-    public static MeshData CreateGrid(float width, float depth, int m, int n)
+    public static NodeData CreateGrid(float width, float depth, int m, int n)
     {
-        var meshData = new MeshData();
+        var meshData = new NodeData();
 
         //
         // Create the vertices.
@@ -59,9 +59,9 @@ public static class GeometryGenerator
         return meshData;
     }
 
-    public static MeshData CreateBox(float width, float height, float depth, int numSubdivisions)
+    public static NodeData CreateBox(float width, float height, float depth, int numSubdivisions)
     {
-        var meshData = new MeshData();
+        var meshData = new NodeData();
 
         //
         // Create the vertices.
@@ -133,7 +133,7 @@ public static class GeometryGenerator
     }
 
     //TODO:
-    private static void Subdivide(MeshData meshData)
+    private static void Subdivide(NodeData meshData)
     {
         // Save a copy of the input geometry.
         var verticesCopy = meshData.Vertices.ToArray();
@@ -208,10 +208,10 @@ public static class GeometryGenerator
         return new BiggaVertex(pos, normal, tangent, tex);
     }
 
-    public static MeshData CreateCylinder(float bottomRadius, float topRadius,
+    public static NodeData CreateCylinder(float bottomRadius, float topRadius,
         float height, int sliceCount, int stackCount)
     {
-        var meshData = new MeshData();
+        var meshData = new NodeData();
 
         BuildCylinderSide(bottomRadius, topRadius, height, sliceCount, stackCount, meshData);
         BuildCylinderTopCap(topRadius, height, sliceCount, meshData);
@@ -221,7 +221,7 @@ public static class GeometryGenerator
     }
 
     private static void BuildCylinderSide(float bottomRadius, float topRadius,
-            float height, int sliceCount, int stackCount, MeshData meshData)
+            float height, int sliceCount, int stackCount, NodeData meshData)
         {
             var stackHeight = height / stackCount;
 
@@ -277,7 +277,7 @@ public static class GeometryGenerator
         }
 
         private static void BuildCylinderTopCap(float topRadius, float height,
-            int sliceCount, MeshData meshData)
+            int sliceCount, NodeData meshData)
         {
             var baseIndex = meshData.Vertices.Count;
 
@@ -315,7 +315,7 @@ public static class GeometryGenerator
         }
 
         private static void BuildCylinderBottomCap(float bottomRadius, float height,
-            int sliceCount, MeshData meshData)
+            int sliceCount, NodeData meshData)
         {
             var baseIndex = meshData.Vertices.Count;
             var y = -0.5f * height;
@@ -350,28 +350,9 @@ public static class GeometryGenerator
         }
 
     //TODO:
-    public static SubmeshGeometry AppendMeshData(MeshData meshData, List<BiggaVertex> vertices, List<int> indices)
+    public static NodeData CreateSphere(float radius, int sliceCount, int stackCount)
     {
-        // Определяем SubmeshGeometry которая описывает часть буфера вершин/индексов, содержащую подгеометрию
-
-        var submesh = new SubmeshGeometry
-        {
-            IndexCount = meshData.Indices.Count,
-            StartIndexLocation = indices.Count,
-            BaseVertexLocation = vertices.Count,
-            World = meshData.NormalizedWorld,
-        };
-
-        vertices.AddRange(meshData.Vertices);
-        indices.AddRange(meshData.Indices);
-
-        return submesh;
-    }
-
-    //TODO:
-    public static MeshData CreateSphere(float radius, int sliceCount, int stackCount)
-    {
-        var meshData = new MeshData();
+        var meshData = new NodeData();
 
         //
         // Compute the vertices stating at the top pole and moving down the stacks.

@@ -14,7 +14,7 @@ public static class StlReader
     /// </summary>
     /// <param name="filePath">Путь до модели</param>
     /// <returns>Геометрия объекта</returns>
-    public static MeshData Import(string filePath)
+    public static NodeData Import(string filePath)
     {
         if (!File.Exists(filePath))
             throw new Exception($"Skill issue, file {filePath} not found");
@@ -50,7 +50,7 @@ public static class StlReader
             reader.ReadUInt16();
         }
 
-        var mesh = new MeshData();
+        var mesh = new NodeData();
         mesh.Vertices.AddRange(vertices);
         mesh.Indices.AddRange(indices);
 

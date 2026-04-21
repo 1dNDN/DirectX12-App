@@ -35,7 +35,7 @@ public class SceneResourcesService : IDisposable
     /// <summary>
     /// Материалы для геометрий сцены
     /// </summary>
-    public Dictionary<string, Material> Materials { get; } = new();
+    public List<Material> Materials { get; } = new();
 
     /// <summary>
     /// Текстуры для геометрий сцены
@@ -48,6 +48,11 @@ public class SceneResourcesService : IDisposable
     public List<ModelOnDisk> ModelsPaths { get; } = [];
 
     /// <summary>
+    /// Список префабов, готовых для спавна на сцене
+    /// </summary>
+    public Dictionary<string, Prefab> Prefabs { get; } = [];
+
+    /// <summary>
     /// Список заспавненных сущностей
     /// </summary>
     public List<SpawnedEntityMetadata> EntitiesMetadata { get; } = [];
@@ -55,12 +60,12 @@ public class SceneResourcesService : IDisposable
     /// <summary>
     /// Список всех объектов геометрии сцены
     /// </summary>
-    public readonly List<RenderItem> SceneItems = [];
+    public readonly List<RenderEntity> SceneItems = [];
 
     /// <summary>
     /// Список всех объектов геометрии сцены, поделенных по PSO
     /// </summary>
-    public readonly Dictionary<RenderLayer, List<RenderItem>> SceneItemLayers = new(1)
+    public readonly Dictionary<RenderLayer, List<RenderEntity>> SceneItemLayers = new(1)
     {
         [RenderLayer.Opaque] = [],
     };
@@ -90,8 +95,7 @@ public class SceneResourcesService : IDisposable
         SceneLock.EnterWriteLock();
         try
         {
-            LoadModels();
-            LoadMaterials();
+            LoadScenes();
             BuildScene();
 
             _dirty = false;
@@ -117,8 +121,8 @@ public class SceneResourcesService : IDisposable
 
             resetCommandList();
 
-            UpdateModels();
-            UpdateMaterials();
+
+            UpdateScenes();
             UpdateScene();
 
             _dirty = false;
@@ -130,41 +134,46 @@ public class SceneResourcesService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Грузит модели с диска в память
-    /// </summary>
-    /// <exception cref="Exception"></exception>
-    public void LoadModels()
+    private void LoadScenes()
     {
-        var vertices = new List<BiggaVertex>();
-        var indices = new List<int>();
-        var geometries = new List<(string, SubmeshGeometry)>();
+        var builder = new MeshGeometryBuilder();
 
         foreach (var modelPath in ModelsPaths)
         {
             try
             {
-                var extention = Path.GetExtension(modelPath.FilePath);
+                var extension = Path.GetExtension(modelPath.FilePath);
 
-                MeshData? mesh = null;
-                if (extention.Equals(".gltf", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    mesh = GltfReader.ImportGeometry(modelPath.FilePath);
-                }
-                else if (extention.Equals(".obj", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    mesh = ObjReader.Import(modelPath.FilePath);
-                }
-                else if (extention.Equals(".stl", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    mesh = StlReader.Import(modelPath.FilePath);
-                }
-
-                if (mesh == null)
+                if (!extension.Equals(".gltf", StringComparison.InvariantCultureIgnoreCase))
                     throw new Exception($"путь {modelPath.FilePath} - говно и не поддерживается");
 
-                var submesh = GeometryGenerator.AppendMeshData(mesh, vertices, indices);
-                geometries.Add(new ValueTuple<string, SubmeshGeometry>(modelPath.Id, submesh));
+                var sceneData = GltfReader.Import(modelPath.FilePath, new SceneData(RenderDevice));
+
+                var textureHeapOffset = Textures.Count;
+
+                foreach (var node in sceneData.Nodes)
+                {
+                    builder.AppendMeshData(node);
+
+                    AddMaterial(node.NodeMaterial, textureHeapOffset);
+                }
+
+                for (var i = 0; i < sceneData.Textures.Count; i++)
+                {
+                    var texture = sceneData.Textures[i];
+                    Textures.Add(modelPath.Id + " | " + i, texture);
+                }
+
+                var prefab = new Prefab
+                {
+                    World = sceneData.NormalizedWorld,
+                    Textures = sceneData.Textures,
+                    SubMeshes = builder.GetAndResetSubmeshes(),
+                };
+
+                builder.Track(prefab);
+
+                Prefabs.Add(modelPath.Id, prefab);
             }
             catch (Exception ex)
             {
@@ -173,80 +182,39 @@ public class SceneResourcesService : IDisposable
             }
         }
 
-        var geo = MeshGeometry.New(RenderDevice, RenderCommandList, vertices, indices.ToArray(), GeometryEnum.Master);
-
-        foreach (var submeshGeometry in geometries)
-            geo.DrawArgs.Add(submeshGeometry.Item1, submeshGeometry.Item2);
-        // TODO: Хуйня какая-то получилась. Переделать надо
-
-        Geometry = geo;
+        Geometry = builder.BuildGeometry(RenderDevice, RenderCommandList);
     }
+
 
     /// <summary>
     /// Если список моделей изменился - грузит их заново с диска
     /// </summary>
-    private void UpdateModels()
+    private void UpdateScenes()
     {
         Geometry.Dispose();
 
-        LoadModels();
-    }
-
-    /// <summary>
-    /// Грузит материалы и текстуры
-    /// </summary>
-    public void LoadMaterials()
-    {
-        //TODO: добавить поддержку не только GLTF
-
-        foreach (var modelPath in ModelsPaths)
-        {
-            var extention = Path.GetExtension(modelPath.FilePath);
-
-            if (extention.Equals(".gltf", StringComparison.InvariantCultureIgnoreCase))
-            {
-                var (img, _) = GltfReader.ImportTexture(modelPath.FilePath);
-
-                var texture = new Texture
-                {
-                    Resource = TextureUtil.CreateTextureFromPng(RenderDevice, img),
-                };
-
-                Textures.Add(modelPath.Id, texture);
-
-                var material = GltfReader.ImportMaterial(modelPath.FilePath);
-                material.NameStr = modelPath.Id;
-
-                AddMaterial(material);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Если материалы изменились - грузит заново
-    /// </summary>
-    private void UpdateMaterials()
-    {
         foreach (var texture in Textures)
             texture.Value.Dispose();
 
         Textures.Clear();
         Materials.Clear();
 
-        LoadMaterials();
+
+        LoadScenes();
     }
 
     /// <summary>
     /// Добавляет материал с учётом индексов в буферах
     /// </summary>
     /// <param name="mat"></param>
-    private void AddMaterial(Material mat)
+    /// <param name="textureHeapOffset"></param>
+    private void AddMaterial(Material mat, int textureHeapOffset)
     {
         var materialIndex = Materials.Count;
 
         mat.MaterialCbIndex = materialIndex;
-        mat.DiffuseSrvHeapIndex = materialIndex;
-        Materials.Add(mat.NameStr, mat);
+        mat.DiffuseSrvHeapIndex = textureHeapOffset + mat.DiffuseTexture ?? -1;
+        Materials.Add(mat);
     }
 
 
@@ -258,21 +226,16 @@ public class SceneResourcesService : IDisposable
     {
         foreach (var entity in EntitiesMetadata)
         {
-            var submesh = Geometry.DrawArgs[entity.ModelOnDiskId];
+            var prefab = Prefabs[entity.ModelOnDiskId];
 
             var world = CreateWorldMatrix(entity);
 
-            var renderItem = new RenderItem
+            var renderItem = new RenderEntity()
             {
                 EntityId = entity.Id,
                 ObjCbIndex = SceneItems.Count,
-                Geo = Geometry,
-                IndexCount = submesh.IndexCount,
-                StartIndexLocation = submesh.StartIndexLocation,
-                BaseVertexLocation = submesh.BaseVertexLocation,
-                SubmeshWorld = submesh.World,
+                EntityModel = prefab,
                 BaseWorld = world,
-                Mat = Materials[entity.ModelOnDiskId],
             };
 
             var layer = RenderLayer.Opaque; //TODO: сделать нормально

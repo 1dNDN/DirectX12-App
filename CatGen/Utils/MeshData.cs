@@ -1,11 +1,12 @@
 using SharpDX;
+using SharpDX.Direct3D12;
 
 namespace CatGen.Utils;
 
 /// <summary>
 /// Данные о геометрии независимого объекта
 /// </summary>
-public class MeshData
+public class NodeData
 {
     /// <summary>
     /// Вершины геометрии объекта
@@ -16,6 +17,32 @@ public class MeshData
     /// Индексы геометрии объекта
     /// </summary>
     public List<int> Indices { get; } = [];
+
+    public Material NodeMaterial { get; set; } = null!;
+}
+
+
+public class SceneData
+{
+    public SceneData(Device device)
+    {
+        RenderDevice = device;
+    }
+
+    public Device RenderDevice { get; set; }
+
+    private List<BiggaVertex>? _vertices = null;
+    private List<int>? _indices = null;
+
+    /// <summary>
+    /// Вершины геометрии объекта
+    /// </summary>
+    public List<BiggaVertex> Vertices => _vertices ??= Nodes.SelectMany(node => node.Vertices).ToList();
+
+    /// <summary>
+    /// Индексы геометрии объекта
+    /// </summary>
+    public List<int> Indices => _indices ??= Nodes.SelectMany(node => node.Indices).ToList();
 
     /// <summary>
     /// Координата средней точки объекта
@@ -43,4 +70,26 @@ public class MeshData
     /// Матрица нормализованного мира объекта. Центрирует объект в 0,0,0 и выставляет масштаб так, что размер 1.
     /// </summary>
     public Matrix NormalizedWorld => Matrix.Translation(-AvgLocation) * Matrix.Scaling(1 / Size);
+
+    public List<NodeData> Nodes { get; } = [];
+
+    public List<Texture> Textures { get; set; } = [];
+
+    public void Add(NodeData node)
+    {
+        _vertices = null;
+        _indices = null;
+
+        Nodes.Add(node);
+    }
+
+    public void Add(SharpGLTF.Schema2.Texture texture)
+    {
+        var value = new Texture
+        {
+            Resource = TextureUtil.CreateTextureFromPng(RenderDevice, texture.PrimaryImage),
+        };
+
+        Textures.Add(value);
+    }
 }
