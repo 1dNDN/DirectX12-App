@@ -215,6 +215,7 @@ public class SceneResourcesService : IDisposable
 
         mat.MaterialCbIndex = materialIndex;
         mat.DiffuseSrvHeapIndex = textureHeapOffset + mat.DiffuseTexture ?? -1;
+        mat.NormalSrvHeapIndex = textureHeapOffset + mat.NormalTexture ?? -1;
         Materials.Add(mat);
     }
 
@@ -225,6 +226,8 @@ public class SceneResourcesService : IDisposable
     /// </summary>
     public void BuildScene()
     {
+        var objCbOffset = 0;
+
         foreach (var entity in EntitiesMetadata)
         {
             var prefab = Prefabs[entity.ModelOnDiskId];
@@ -234,10 +237,12 @@ public class SceneResourcesService : IDisposable
             var renderItem = new RenderEntity()
             {
                 EntityId = entity.Id,
-                ObjCbIndex = SceneItems.Count,
+                ObjCbOffset = objCbOffset,
                 EntityModel = prefab,
                 BaseWorld = world,
             };
+
+            objCbOffset += prefab.SubMeshes.Count;
 
             var layer = RenderLayer.Opaque; //TODO: сделать нормально
 

@@ -1,10 +1,13 @@
-﻿using SharpDX;
+﻿using System.Runtime.InteropServices;
+
+using SharpDX;
 
 namespace CatGen;
 
 /// <summary>
 /// Класс материала для передачи в шейдер
 /// </summary>
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct MaterialConstants
 {
     /// <summary>
@@ -26,13 +29,23 @@ public struct MaterialConstants
     public Matrix MatTransform;
 
     /// <summary>
-    /// Материал по умолчанию
+    /// Индекс диффузной текстуры
     /// </summary>
+    public int DiffuseMapIndex;
+
+    // /// <summary>
+    // /// Индекс карты нормалей
+    // /// </summary>
+    // public int NormalMapIndex;
+    public int MaterialPad0;
+    public int MaterialPad1;
+    public int MaterialPad2;
+
     public static MaterialConstants Default => new MaterialConstants
     {
         DiffuseAlbedo = Vector4.One,
         FresnelR0 = new Vector3(0.01f),
-        Roughness = 0.25f,
-        MatTransform = Matrix.Identity,
+        Roughness = 64.0f,
+        MatTransform = Matrix.Identity
     };
 }

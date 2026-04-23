@@ -42,7 +42,7 @@ public struct BiggaVertex
     {
         Position = position;
         Normal = normal;
-        // TangentU = tangentU;
+        TangentU = tangentU;
         TextureCoordinate = textureCoordinate;
     }
 

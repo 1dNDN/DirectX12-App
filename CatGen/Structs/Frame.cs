@@ -11,7 +11,7 @@ public class Frame : IDisposable
     {
         CmdListAlloc = device.CreateCommandAllocator(CommandListType.Direct);
         PassConstantBuffer = new UploadBuffer<PassConstants>(device, passCount, true);
-        MaterialConstantBuffer = new UploadBuffer<MaterialConstants>(device, materialCount, true);
+        MaterialConstantBuffer = new UploadBuffer<MaterialConstants>(device, materialCount, false);
         ObjectConstantBuffer = new UploadBuffer<ObjectConstants>(device, objectCount, true);
     }
 

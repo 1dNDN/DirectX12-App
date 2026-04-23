@@ -28,7 +28,7 @@ public class MeshGeometryBuilder
             IndexCount = meshData.Indices.Count,
             BaseVertexLocation = _vertices.Count,
             StartIndexLocation = _indices.Count,
-            Mat = meshData.NodeMaterial,
+            Material = meshData.NodeMaterial,
         };
 
         _vertices.AddRange(meshData.Vertices);

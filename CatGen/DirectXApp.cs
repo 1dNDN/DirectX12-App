@@ -194,7 +194,17 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         RenderCommandList.SetGraphicsRootSignature(RenderRootSignature);
 
         var passCb = CurrentFrameResource.PassConstantBuffer.Resource;
-        RenderCommandList.SetGraphicsRootConstantBufferView(2, passCb.GPUVirtualAddress);
+        RenderCommandList.SetGraphicsRootConstantBufferView(PARAMETER_INDEX_PASS_CONSTANTS, passCb.GPUVirtualAddress);
+
+        // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and
+        // set as a root descriptor.
+        var matBuffer = CurrentFrameResource.MaterialConstantBuffer.Resource;
+        RenderCommandList.SetGraphicsRootShaderResourceView(PARAMETER_INDEX_MATERIAL, matBuffer.GPUVirtualAddress);
+
+        // Bind all the textures used in this scene. Observe
+        // that we only have to specify the first descriptor in the table.
+        // The root signature knows how many descriptors are expected in the table.
+        RenderCommandList.SetGraphicsRootDescriptorTable(PARAMETER_INDEX_TEXTURE, SrvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
         DrawRenderItems(RenderCommandList, Scene.SceneItemLayers[RenderLayer.Opaque]);
 
@@ -296,25 +306,28 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
     private void UpdateObjectCBs()
     {
-        foreach (var e in Scene.SceneItems)
-        {
-            // Only update the cbuffer data if the constants have changed.
-            // This needs to be tracked per frame resource.
-
-            // Обновляем буфер констант только если константы изменились. Отслеживаем изменения для каждого кадра
-            if (e.NumFramesDirty > 0)
+        foreach (var entity in Scene.SceneItems)
+            for (var i = 0; i < entity.EntityModel.SubMeshes.Count; i++)
             {
-                var objConstants = new ObjectConstants
+                var mesh = entity.EntityModel.SubMeshes[i];
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
+
+                // Обновляем буфер констант только если константы изменились. Отслеживаем изменения для каждого кадра
+                if (mesh.NumFramesDirty > 0)
                 {
-                    World = Matrix.Transpose(e.World),
-                    TexTransform = Matrix.Transpose(e.TexTransform),
-                };
+                    var objConstants = new ObjectConstants
+                    {
+                        World = Matrix.Transpose(entity.World),
+                        TexTransform = Matrix.Transpose(entity.TexTransform),
+                        MaterialIndex = mesh.Material.MaterialCbIndex,
+                    };
 
-                CurrentFrameResource.ObjectConstantBuffer.CopyData(e.ObjCbIndex, ref objConstants);
+                    CurrentFrameResource.ObjectConstantBuffer.CopyData(entity.ObjCbOffset + i, ref objConstants);
 
-                e.NumFramesDirty--;
+                    mesh.NumFramesDirty--;
+                }
             }
-        }
     }
 
     private void UpdateMaterialCBs()
@@ -331,6 +344,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                     FresnelR0 = mat.FresnelR0,
                     Roughness = mat.Roughness,
                     MatTransform = Matrix.Transpose(mat.MatTransform),
+                    DiffuseMapIndex = mat.DiffuseSrvHeapIndex,
                 };
 
                 CurrentFrameResource.MaterialConstantBuffer.CopyData(mat.MaterialCbIndex, ref matConstants);
@@ -485,19 +499,47 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         // A root signature is an array of root parameters.
         var slotRootParameters = new[]
         {
-            new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
-            new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
-            new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
-            new RootParameter(ShaderVisibility.All, new RootDescriptor(2, 0), RootParameterType.ConstantBufferView),
+            new RootParameter(ShaderVisibility.All, new RootDescriptor(REGISTER_OBJECT_CONSTANTS, REGISTER_SPACE_OBJECT_CONSTANTS), RootParameterType.ConstantBufferView), //b0 space0
+            new RootParameter(ShaderVisibility.All, new RootDescriptor(REGISTER_PASS_CONSTANTS, REGISTER_SPACE_PASS_CONSTANTS), RootParameterType.ConstantBufferView), //b1 space0
+            new RootParameter(ShaderVisibility.All, new RootDescriptor(REGISTER_MATERIAL, REGISTER_SPACE_MATERIAL), RootParameterType.ShaderResourceView), // t0 space1
+            new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, Scene.Textures.Count, REGISTER_TEXTURE, REGISTER_SPACE_TEXTURE)), //t0... space0
         };
 
         var rootSigDesc = new RootSignatureDescription(
             RootSignatureFlags.AllowInputAssemblerInputLayout,
             slotRootParameters,
-            GetStaticSamplers());
+            GetStaticSamplers()); //s0...s5
 
         RenderRootSignature = RenderDevice.CreateRootSignature(rootSigDesc.Serialize());
     }
+
+    private const int PARAMETER_INDEX_OBJECT_CONSTANTS = 0;
+    private const int PARAMETER_INDEX_PASS_CONSTANTS = 1;
+    private const int PARAMETER_INDEX_MATERIAL = 2;
+    private const int PARAMETER_INDEX_TEXTURE = 3;
+
+    //==================
+
+    private const int REGISTER_OBJECT_CONSTANTS = 0;
+    private const int REGISTER_PASS_CONSTANTS = 1;
+    private const int REGISTER_MATERIAL = 0;
+    private const int REGISTER_TEXTURE = 0;
+
+    private const int REGISTER_SPACE_OBJECT_CONSTANTS = 0;
+    private const int REGISTER_SPACE_PASS_CONSTANTS = 0;
+    private const int REGISTER_SPACE_MATERIAL = 1;
+    private const int REGISTER_SPACE_TEXTURE = 0;
+
+    //==================
+
+    private const int REGISTER_SAMPLER_POUNT_WRAP = 0;
+    private const int REGISTER_SAMPLER_POUNT_CLAMP = 1;
+    private const int REGISTER_SAMPLER_LINEAR_WRAP = 2;
+    private const int REGISTER_SAMPLER_LINEAR_CLAMP = 3;
+    private const int REGISTER_SAMPLER_ANISOTROPIC_WRAP = 4;
+    private const int REGISTER_SAMPLER_ANISOTROPIC_CLAMP = 5;
+
+    private const int REGISTER_SPACE_SAMPLERS = 0;
 
     private StaticSamplerDescription[] GetStaticSamplers()
     {
@@ -507,31 +549,31 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         return
         [
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, REGISTER_SAMPLER_POUNT_WRAP, REGISTER_SPACE_SAMPLERS)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressUVW = TextureAddressMode.Wrap,
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, REGISTER_SAMPLER_POUNT_CLAMP, REGISTER_SPACE_SAMPLERS)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressUVW = TextureAddressMode.Clamp,
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, REGISTER_SAMPLER_LINEAR_WRAP, REGISTER_SPACE_SAMPLERS)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressUVW = TextureAddressMode.Wrap,
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, REGISTER_SAMPLER_LINEAR_CLAMP, REGISTER_SPACE_SAMPLERS)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressUVW = TextureAddressMode.Clamp,
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, REGISTER_SAMPLER_ANISOTROPIC_WRAP, REGISTER_SPACE_SAMPLERS)
             {
                 Filter = Filter.Anisotropic,
                 AddressUVW = TextureAddressMode.Wrap,
@@ -539,7 +581,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                 MaxAnisotropy = 8,
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, REGISTER_SAMPLER_ANISOTROPIC_CLAMP, REGISTER_SPACE_SAMPLERS)
             {
                 Filter = Filter.Anisotropic,
                 AddressUVW = TextureAddressMode.Clamp,
@@ -556,22 +598,25 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         //
         // ShaderMacro[] alphaTestDefines = { new ShaderMacro("FOG", "0"), new ShaderMacro("ALPHA_TEST", "1") };
 
-        VertexShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0");
-        PixelShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0");
+        VertexShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1");
+        PixelShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_1");
         // PixelAlphatestdShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
         ShaderInputLayout = new InputLayoutDescription(
         [
             new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
-                new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
-                new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
+            new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
+            new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
+            // new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0),
         ]);
     }
 
     private void BuildFrameResources()
     {
+        var meshesCount = Scene.SceneItems.Select(entity => entity.EntityModel.SubMeshes.Count).Sum();
+
         for (var i = 0; i < NumFrameResources; i++)
         {
-            Frames.Add(new Frame(RenderDevice, 1, Scene.SceneItems.Count, Scene.Materials.Count));
+            Frames.Add(new Frame(RenderDevice, 1, meshesCount, Scene.Materials.Count));
             FenceEvents.Add(new AutoResetEvent(false));
         }
     }
@@ -579,29 +624,22 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderEntity> ritems)
     {
         var objectCbSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
-        var materialCbSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
-
         var objectCb = CurrentFrameResource.ObjectConstantBuffer.Resource;
-        var materialCb = CurrentFrameResource.MaterialConstantBuffer.Resource;
 
         foreach (var item in ritems)
-        foreach (var mesh in item.EntityModel.SubMeshes)
-        {
-            cmdList.SetVertexBuffer(0, item.EntityModel.Geo.VertexBufferView);
-            cmdList.SetIndexBuffer(item.EntityModel.Geo.IndexBufferView);
-            cmdList.PrimitiveTopology = mesh.PrimitiveType;
+            for (var i = 0; i < item.EntityModel.SubMeshes.Count; i++)
+            {
+                var mesh = item.EntityModel.SubMeshes[i];
+                cmdList.SetVertexBuffer(0, item.EntityModel.Geo.VertexBufferView);
+                cmdList.SetIndexBuffer(item.EntityModel.Geo.IndexBufferView);
+                cmdList.PrimitiveTopology = mesh.PrimitiveType;
 
-            var textureHandle = SrvDescriptorHeap.GPUDescriptorHandleForHeapStart + mesh.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
+                var objectCbAddress = objectCb.GPUVirtualAddress + (item.ObjCbOffset + i) * objectCbSizeBytes;
 
-            var objectCbAddress = objectCb.GPUVirtualAddress + item.ObjCbIndex * objectCbSizeBytes;
-            var materialCbAddress = materialCb.GPUVirtualAddress + mesh.Mat.MaterialCbIndex * materialCbSizeBytes;
+                cmdList.SetGraphicsRootConstantBufferView(PARAMETER_INDEX_OBJECT_CONSTANTS, objectCbAddress);
 
-            cmdList.SetGraphicsRootDescriptorTable(0, textureHandle);
-            cmdList.SetGraphicsRootConstantBufferView(1, objectCbAddress);
-            cmdList.SetGraphicsRootConstantBufferView(3, materialCbAddress);
-
-            cmdList.DrawIndexedInstanced(mesh.IndexCount, 1, mesh.StartIndexLocation, mesh.BaseVertexLocation, 0);
-        }
+                cmdList.DrawIndexedInstanced(mesh.IndexCount, 1, mesh.StartIndexLocation, mesh.BaseVertexLocation, 0);
+            }
     }
 
     private void BuildPSOs()

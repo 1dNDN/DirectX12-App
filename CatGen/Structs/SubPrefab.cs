@@ -12,7 +12,7 @@ public class SubPrefab : Dirtyable
     /// <summary>
     /// Материал меша
     /// </summary>
-    public Material Mat { get; set; }
+    public Material Material { get; set; } = null!;
 
     /// <summary>
     /// Тип топологии меша

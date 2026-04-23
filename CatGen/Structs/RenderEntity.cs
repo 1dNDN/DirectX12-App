@@ -46,7 +46,7 @@ public class RenderEntity : Dirtyable
     /// <summary>
     /// Индекс объекта в буфере констант для этого объекта
     /// </summary>
-    public int ObjCbIndex { get; set; } = -1;
+    public int ObjCbOffset { get; set; } = -1;
 
     public Matrix TexTransform { get; set; } = Matrix.Identity;
 }

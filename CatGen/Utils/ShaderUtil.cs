@@ -22,7 +22,10 @@ public static class ShaderUtil
             include: FileIncludeHandler.Default,
             defines: defines);
 
-        return new ShaderBytecode(result);
+        return result.HasErrors
+            ? throw new Exception(result.Message)
+            : new ShaderBytecode(result);
+
     }
 
     // Required for ShaderBytecode.CompileFromFile API in order to resolve #includes in shader files.

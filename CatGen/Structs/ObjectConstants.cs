@@ -9,5 +9,10 @@ namespace CatGen
     {
         public Matrix World;
         public Matrix TexTransform;
+        
+        public int MaterialIndex;
+        public int ObjPad0;
+        public int ObjPad1;
+        public int ObjPad2;
     }
 }
