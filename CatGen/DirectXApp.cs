@@ -345,6 +345,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                     Roughness = mat.Roughness,
                     MatTransform = Matrix.Transpose(mat.MatTransform),
                     DiffuseMapIndex = mat.DiffuseSrvHeapIndex,
+                    NormalMapIndex = mat.NormalSrvHeapIndex,
                 };
 
                 CurrentFrameResource.MaterialConstantBuffer.CopyData(mat.MaterialCbIndex, ref matConstants);
@@ -606,7 +607,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
             new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
             new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
-            // new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0),
+            new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0),
         ]);
     }
 

@@ -24,10 +24,10 @@ struct MaterialData
     float3   FresnelR0;
     float    Roughness;
     float4x4 MatTransform;
-    int      DiffuseMapIndex;
+    uint     DiffuseMapIndex;
+    uint     NormalMapIndex;
     uint     MatPad0;
     uint     MatPad1;
-    uint     MatPad2;
 };
 
 
@@ -89,6 +89,7 @@ struct VertexIn
     float3 PosL    : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC    : TEXCOORD;
+    float3 TangentU : TANGENT;
 };
 
 struct VertexOut
@@ -96,6 +97,7 @@ struct VertexOut
     float4 PosH    : SV_POSITION;
     float3 PosW    : POSITION;
     float3 NormalW : NORMAL;
+    float3 TangentW : TANGENT;
     float2 TexC    : TEXCOORD;
 };
 
@@ -113,6 +115,8 @@ VertexOut VS(VertexIn vin)
     // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
     vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
 
+    vout.TangentW = mul(vin.TangentU, (float3x3)gWorld);
+
     // Transform to homogeneous clip space.
     vout.PosH = mul(posW, gViewProj);
 
@@ -123,6 +127,27 @@ VertexOut VS(VertexIn vin)
     return vout;
 }
 
+//---------------------------------------------------------------------------------------
+// Transforms a normal map sample to world space.
+//---------------------------------------------------------------------------------------
+float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
+{
+    // Uncompress each component from [0,1] to [-1,1].
+    float3 normalT = 2.0f*normalMapSample - 1.0f;
+
+    // Build orthonormal basis.
+    float3 N = unitNormalW;
+    float3 T = normalize(tangentW - dot(tangentW, N)*N);
+    float3 B = cross(N, T);
+
+    float3x3 TBN = float3x3(T, B, N);
+
+    // Transform from tangent space to world space.
+    float3 bumpedNormalW = mul(normalT, TBN);
+
+    return bumpedNormalW;
+}
+
 float4 PS(VertexOut pin) : SV_Target
 {
     // Fetch the material data.
@@ -131,12 +156,25 @@ float4 PS(VertexOut pin) : SV_Target
     float3 fresnelR0 = matData.FresnelR0;
     float  roughness = matData.Roughness;
     uint diffuseTexIndex = matData.DiffuseMapIndex;
+    uint normalMapIndex = matData.NormalMapIndex;
+
+    // Interpolating normal can unnormalize it, so renormalize it.
+    pin.NormalW = normalize(pin.NormalW);
+
+    float3 bumpedNormalW;
+
+    if (normalMapIndex == -1)
+    {
+        bumpedNormalW = pin.NormalW;
+    } else
+    {
+        float4 normalMapSample = gDiffuseMap[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+        bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
+    }
 
     // Dynamically look up the texture in the array.
     diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
 
-    // Interpolating normal can unnormalize it, so renormalize it.
-    pin.NormalW = normalize(pin.NormalW);
 
     // Vector from point being lit to eye.
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
@@ -147,8 +185,7 @@ float4 PS(VertexOut pin) : SV_Target
     const float shininess = 1.0f - roughness;
     Material mat = { diffuseAlbedo, fresnelR0, shininess };
     float3 shadowFactor = 1.0f;
-    float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
-        pin.NormalW, toEyeW, shadowFactor);
+    float4 directLight = ComputeLighting(gLights, mat, pin.PosW, bumpedNormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
 

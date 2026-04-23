@@ -33,13 +33,14 @@ public struct MaterialConstants
     /// </summary>
     public int DiffuseMapIndex;
 
-    // /// <summary>
-    // /// Индекс карты нормалей
-    // /// </summary>
-    // public int NormalMapIndex;
+    /// <summary>
+    /// Индекс карты нормалей
+    /// </summary>
+    public int NormalMapIndex;
+
     public int MaterialPad0;
     public int MaterialPad1;
-    public int MaterialPad2;
+    // public int MaterialPad2;
 
     public static MaterialConstants Default => new MaterialConstants
     {
