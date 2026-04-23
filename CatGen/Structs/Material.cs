@@ -1,5 +1,7 @@
 ﻿using SharpDX;
 
+using SharpGLTF.Schema2;
+
 namespace CatGen;
 
 /// <summary>
@@ -14,6 +16,8 @@ public class Material : Dirtyable
         float occlusionStrength,
         Vector4 emissiveColor,
         float emissiveStrength,
+        AlphaMode alphaMode,
+        float alphaCutoff,
         int? baseTexture,
         int? metallicRougnessTexture,
         int? normalTexture,
@@ -32,6 +36,8 @@ public class Material : Dirtyable
         OcclusionStrength = occlusionStrength;
         EmissiveColor = emissiveColor;
         EmissiveStrength = emissiveStrength;
+        AlphaMode = alphaMode;
+        AlphaCutoff = alphaCutoff;
         DiffuseTexture = baseTexture;
         RoughnessTexture = metallicRougnessTexture;
         NormalTexture = normalTexture;
@@ -113,6 +119,16 @@ public class Material : Dirtyable
     public Vector4 EmissiveColor { get; set; }
 
     public float OcclusionStrength { get; set; }
+
+    /// <summary>
+    /// Режим работы blending
+    /// </summary>
+    public AlphaMode AlphaMode;
+
+    /// <summary>
+    /// Начиная с какого значения Alpha пиксель можно отбросить
+    /// </summary>
+    public float AlphaCutoff;
 
     public Matrix MatTransform { get; set; } = Matrix.Identity;
 }

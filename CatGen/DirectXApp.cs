@@ -12,6 +12,7 @@ using SharpDX;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 
+using AlphaMode = SharpGLTF.Schema2.AlphaMode;
 using Color = SharpDX.Color;
 using Point = SharpDX.Point;
 using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimension;
@@ -206,14 +207,12 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         // The root signature knows how many descriptors are expected in the table.
         RenderCommandList.SetGraphicsRootDescriptorTable(PARAMETER_INDEX_TEXTURE, SrvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
-        DrawRenderItems(RenderCommandList, Scene.SceneItemLayers[RenderLayer.Opaque]);
+        DrawRenderItems(RenderCommandList, Scene.SceneItems, PSOEnum.Opaque);
 
-        // TODO: переделать
-        // RenderCommandList.PipelineState = PSOs[PSOEnum.AlphaTested];
-        // DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.AlphaTested]);
-        //
-        // RenderCommandList.PipelineState = PSOs[PSOEnum.Transparent];
-        // DrawRenderItems(RenderCommandList, SceneItemLayers[RenderLayer.Transparent]);
+        RenderCommandList.PipelineState = PSOs[PSOEnum.Transparent];
+        DrawRenderItems(RenderCommandList, Scene.SceneItems, PSOEnum.Transparent);
+
+        // в жопу layers
 
         // Indicate a state transition on the resource usage.
         RenderCommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -346,6 +345,8 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                     MatTransform = Matrix.Transpose(mat.MatTransform),
                     DiffuseMapIndex = mat.DiffuseSrvHeapIndex,
                     NormalMapIndex = mat.NormalSrvHeapIndex,
+                    AlphaMode = mat.AlphaMode,
+                    AlphaCutoff = mat.AlphaCutoff,
                 };
 
                 CurrentFrameResource.MaterialConstantBuffer.CopyData(mat.MaterialCbIndex, ref matConstants);
@@ -622,7 +623,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         }
     }
 
-    private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderEntity> ritems)
+    private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderEntity> ritems, PSOEnum mode)
     {
         var objectCbSizeBytes = BufferUtil.CalcConstantBufferByteSize<ObjectConstants>();
         var objectCb = CurrentFrameResource.ObjectConstantBuffer.Resource;
@@ -631,6 +632,13 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             for (var i = 0; i < item.EntityModel.SubMeshes.Count; i++)
             {
                 var mesh = item.EntityModel.SubMeshes[i];
+
+                if(mode == PSOEnum.Opaque && mesh.Material.AlphaMode == AlphaMode.BLEND)
+                    continue;
+
+                if(mode == PSOEnum.Transparent && mesh.Material.AlphaMode != AlphaMode.BLEND)
+                    continue;
+
                 cmdList.SetVertexBuffer(0, item.EntityModel.Geo.VertexBufferView);
                 cmdList.SetIndexBuffer(item.EntityModel.Geo.IndexBufferView);
                 cmdList.PrimitiveTopology = mesh.PrimitiveType;
@@ -675,26 +683,26 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
 
         PSOs[PSOEnum.OpaqueWireframe] = RenderDevice.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
 
-        // var transparentPsoDesc = opaquePsoDesc.Copy();
-        //
-        // var transparencyBlendDesc = new RenderTargetBlendDescription
-        // {
-        //     IsBlendEnabled = true,
-        //     LogicOpEnable = false,
-        //     SourceBlend = BlendOption.SourceAlpha,
-        //     DestinationBlend = BlendOption.InverseSourceAlpha,
-        //     BlendOperation = BlendOperation.Add,
-        //     SourceAlphaBlend = BlendOption.One,
-        //     DestinationAlphaBlend = BlendOption.Zero,
-        //     AlphaBlendOperation = BlendOperation.Add,
-        //     LogicOp = LogicOperation.Noop,
-        //     RenderTargetWriteMask = ColorWriteMaskFlags.All
-        // };
-        //
-        // transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
-        //
-        // PSOs[PSOEnum.Transparent] = RenderDevice.CreateGraphicsPipelineState(transparentPsoDesc);
-        //
+        var transparentPsoDesc = opaquePsoDesc.Copy();
+
+        var transparencyBlendDesc = new RenderTargetBlendDescription
+        {
+            IsBlendEnabled = true,
+            LogicOpEnable = false,
+            SourceBlend = BlendOption.SourceAlpha,
+            DestinationBlend = BlendOption.InverseSourceAlpha,
+            BlendOperation = BlendOperation.Add,
+            SourceAlphaBlend = BlendOption.One,
+            DestinationAlphaBlend = BlendOption.Zero,
+            AlphaBlendOperation = BlendOperation.Add,
+            LogicOp = LogicOperation.Noop,
+            RenderTargetWriteMask = ColorWriteMaskFlags.All
+        };
+
+        transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
+
+        PSOs[PSOEnum.Transparent] = RenderDevice.CreateGraphicsPipelineState(transparentPsoDesc);
+
         // var alphaTestedPsoDesc = opaquePsoDesc.Copy();
         // alphaTestedPsoDesc.PixelShader = PixelAlphatestdShaderByteCode;
         // alphaTestedPsoDesc.RasterizerState.CullMode = CullMode.None;

@@ -23,11 +23,11 @@ struct MaterialData
     float4   DiffuseAlbedo;
     float3   FresnelR0;
     float    Roughness;
+    uint     AlphaMode;
+    float    AlphaCutoff;
     float4x4 MatTransform;
     uint     DiffuseMapIndex;
     uint     NormalMapIndex;
-    uint     MatPad0;
-    uint     MatPad1;
 };
 
 
@@ -155,8 +155,25 @@ float4 PS(VertexOut pin) : SV_Target
     float4 diffuseAlbedo = matData.DiffuseAlbedo;
     float3 fresnelR0 = matData.FresnelR0;
     float  roughness = matData.Roughness;
+    float  alphamode = matData.AlphaMode;
+    float  alphacutoff = matData.AlphaCutoff;
     uint diffuseTexIndex = matData.DiffuseMapIndex;
     uint normalMapIndex = matData.NormalMapIndex;
+
+    // Dynamically look up the texture in the array.
+    diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
+
+    // opaque = 0
+    // mask = 1
+    // blend = 2
+    if (alphamode == 1)
+    {
+        clip(diffuseAlbedo.a - alphacutoff);
+    } else
+        if (alphamode == 0)
+    {
+        diffuseAlbedo.a = 1;
+    }
 
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
@@ -171,10 +188,6 @@ float4 PS(VertexOut pin) : SV_Target
         float4 normalMapSample = gDiffuseMap[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
         bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
     }
-
-    // Dynamically look up the texture in the array.
-    diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
-
 
     // Vector from point being lit to eye.
     float3 toEyeW = normalize(gEyePosW - pin.PosW);

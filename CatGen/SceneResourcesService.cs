@@ -5,6 +5,8 @@ using CatGen.Utils;
 using SharpDX;
 using SharpDX.Direct3D12;
 
+using SharpGLTF.Schema2;
+
 #pragma warning disable CA1822
 namespace CatGen;
 
@@ -65,9 +67,10 @@ public class SceneResourcesService : IDisposable
     /// <summary>
     /// Список всех объектов геометрии сцены, поделенных по PSO
     /// </summary>
-    public readonly Dictionary<RenderLayer, List<RenderEntity>> SceneItemLayers = new(1)
+    public readonly Dictionary<RenderLayer, List<RenderEntity>> SceneItemLayers = new(2)
     {
         [RenderLayer.Opaque] = [],
+        [RenderLayer.Transparent] = [],
     };
 
     /// <summary>
@@ -244,14 +247,22 @@ public class SceneResourcesService : IDisposable
 
             objCbOffset += prefab.SubMeshes.Count;
 
-            var layer = RenderLayer.Opaque; //TODO: сделать нормально
-
-            if (!SceneItemLayers.ContainsKey(layer))
-                SceneItemLayers[layer] = [];
-
-            SceneItemLayers[layer].Add(renderItem);
-            SceneItems.Add(renderItem);
+            AddToSceneLayers(renderItem);
         }
+    }
+
+    private void AddToSceneLayers(RenderEntity renderItem)
+    {
+        var layer = RenderLayer.Opaque; //TODO: сделать нормально
+
+        if (renderItem.EntityModel.SubMeshes.Select(prefab => prefab.Material.AlphaMode).Any(mode => mode == AlphaMode.BLEND))
+            layer = RenderLayer.Transparent;
+
+        if (!SceneItemLayers.ContainsKey(layer))
+            SceneItemLayers[layer] = [];
+
+        SceneItemLayers[layer].Add(renderItem);
+        SceneItems.Add(renderItem);
     }
 
     /// <summary>

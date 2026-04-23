@@ -2,6 +2,8 @@
 
 using SharpDX;
 
+using SharpGLTF.Schema2;
+
 namespace CatGen;
 
 /// <summary>
@@ -25,6 +27,16 @@ public struct MaterialConstants
     /// </summary>
     public float Roughness;
 
+    /// <summary>
+    /// Режим работы blending
+    /// </summary>
+    public AlphaMode AlphaMode;
+
+    /// <summary>
+    /// Начиная с какого значения Alpha пиксель можно отбросить
+    /// </summary>
+    public float AlphaCutoff;
+
     /// Used in texture mapping.
     public Matrix MatTransform;
 
@@ -38,8 +50,8 @@ public struct MaterialConstants
     /// </summary>
     public int NormalMapIndex;
 
-    public int MaterialPad0;
-    public int MaterialPad1;
+    // public int MaterialPad0;
+    // public int MaterialPad1;
     // public int MaterialPad2;
 
     public static MaterialConstants Default => new MaterialConstants

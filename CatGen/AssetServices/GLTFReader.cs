@@ -166,6 +166,9 @@ public static class GltfReader
         var emissiveColor = logicalMaterial.GetMaterialColor(emissiveName, 0.0f);
         var emissiveStrength = logicalMaterial.GetMaterialFactor(emissiveName, emissiveStrengthName, 1.0f);
 
+        var alphamode = logicalMaterial.Alpha;
+        var alphacutoff = logicalMaterial.AlphaCutoff;
+
         var baseTexture = logicalMaterial.GetTextureIndex(baseColorName);
         var metallicRougnessTexture = logicalMaterial.GetTextureIndex(metallicRoughnessName);
         var normalTexture = logicalMaterial.GetTextureIndex(normalName);
@@ -180,6 +183,8 @@ public static class GltfReader
             occlusionStrength,
             emissiveColor,
             emissiveStrength,
+            alphamode,
+            alphacutoff,
             baseTexture,
             metallicRougnessTexture,
             normalTexture,
