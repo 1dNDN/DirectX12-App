@@ -9,6 +9,7 @@ using CatGen.Interfaces;
 using CatGen.Saves;
 
 using SharpDX;
+using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 
@@ -265,6 +266,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         {
             UpdateDescriptorHeaps();
             UpdateFrameResources();
+            UpdateShadersAndInputLayout();
 
             RenderCommandList.Close();
             RenderCommandQueue.ExecuteCommandList(RenderCommandList);
@@ -290,6 +292,11 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         SrvDescriptorHeap.Dispose();
 
         BuildDescriptorHeaps();
+    }
+
+    private void UpdateShadersAndInputLayout()
+    {
+        BuildShadersAndInputLayout();
     }
 
     private void UpdateFrameResources()
@@ -499,6 +506,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
         // Root parameter can be a table, root descriptor or root constants.
 
         // A root signature is an array of root parameters.
+        Console.WriteLine($"Textures = {Scene.Textures.Count}");
         var slotRootParameters = new[]
         {
             new RootParameter(ShaderVisibility.All, new RootDescriptor(REGISTER_OBJECT_CONSTANTS, REGISTER_SPACE_OBJECT_CONSTANTS), RootParameterType.ConstantBufferView), //b0 space0
@@ -597,11 +605,12 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
     private void BuildShadersAndInputLayout()
     {
         // ShaderMacro[] defines = { new ShaderMacro("FOG", "0") };
+        ShaderMacro[] defines = [new ShaderMacro("NUM_TEXTURES", this.Scene.Textures.Count)];
         //
         // ShaderMacro[] alphaTestDefines = { new ShaderMacro("FOG", "0"), new ShaderMacro("ALPHA_TEST", "1") };
 
-        VertexShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1");
-        PixelShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_1");
+        VertexShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1", defines);
+        PixelShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_1", defines);
         // PixelAlphatestdShaderByteCode = ShaderUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
         ShaderInputLayout = new InputLayoutDescription(
         [

@@ -15,6 +15,10 @@
     #define NUM_SPOT_LIGHTS 0
 #endif
 
+#ifndef NUM_TEXTURES
+    #define NUM_TEXTURES 1
+#endif
+
 // Include structures and functions for lighting.
 #include "Shaders\LightingUtil.hlsl"
 
@@ -33,7 +37,7 @@ struct MaterialData
 
 // An array of textures, which is only supported in shader model 5.1+.  Unlike Texture2DArray, the textures
 // in this array can be different sizes and formats, making it more flexible than texture arrays.
-Texture2D gDiffuseMap[10] : register(t0);
+Texture2D gDiffuseMap[NUM_TEXTURES] : register(t0);
 
 // Put in space1, so the texture array does not overlap with these resources.
 // The texture array will occupy registers t0, t1, ..., t3 in space0.
