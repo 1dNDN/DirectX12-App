@@ -88,7 +88,7 @@ cbuffer cbPass : register(b1)
     Light gLights[MaxLights];
 };
 
-struct VertexIn
+struct  VertexIn
 {
     float3 PosL    : POSITION;
     float3 NormalL : NORMAL;
