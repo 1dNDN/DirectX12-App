@@ -170,8 +170,11 @@ float4 PS(VertexOut pin) : SV_Target
     int occlusionMapIndex = matData.OcclusionMapIndex;
     int emissiveMapIndex = matData.EmissiveMapIndex;
 
+    if (diffuseTexIndex > 0)
+    {
+        diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
+    }
     // Dynamically look up the texture in the array.
-    diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
 
     // opaque = 0
     // mask = 1
