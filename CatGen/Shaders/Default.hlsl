@@ -30,11 +30,11 @@ struct MaterialData
     uint     AlphaMode;
     float    AlphaCutoff;
     float4x4 MatTransform;
-    uint     DiffuseMapIndex;
-    uint     NormalMapIndex;
-    uint     RoughnessMapIndex;
-    uint     OcclusionMapIndex;
-    uint     EmissiveMapIndex;
+    int     DiffuseMapIndex;
+    int     NormalMapIndex;
+    int     RoughnessMapIndex;
+    int     OcclusionMapIndex;
+    int     EmissiveMapIndex;
 };
 
 
@@ -213,11 +213,24 @@ float4 PS(VertexOut pin) : SV_Target
         fresnelR0Combined = roughnessMapSample.b;
     }
 
+    float4 occlusionCombined;
+    if (occlusionMapIndex == -1)
+    {
+        occlusionCombined = 1.0f;
+    } else
+    {
+        float4 occlusionMapSample = gDiffuseMap[roughnessMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+
+        occlusionCombined = occlusionMapSample.rgba;
+    }
+
+    roughnessCombined = clamp(roughnessCombined, 0.01F, 0.99F);
+
     // Vector from point being lit to eye.
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
     // Light terms.
-    float4 ambient = gAmbientLight*diffuseAlbedo;
+    float4 ambient = gAmbientLight * diffuseAlbedo * occlusionCombined;
 
     const float shininess = 1.0f - roughnessCombined;
     Material mat = { diffuseAlbedo, fresnelR0Combined, shininess };
