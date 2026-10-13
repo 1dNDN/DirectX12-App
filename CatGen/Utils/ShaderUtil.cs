@@ -22,9 +22,13 @@ public static class ShaderUtil
             include: FileIncludeHandler.Default,
             defines: defines);
 
-        return result.HasErrors
-            ? throw new Exception(result.Message)
-            : new ShaderBytecode(result);
+        if (result.HasErrors)
+            throw new Exception(result.Message);
+
+        if (result.Bytecode == null)
+            throw new Exception(result.Message);
+
+        return new ShaderBytecode(result);
 
     }
 

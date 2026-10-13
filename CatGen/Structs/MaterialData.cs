@@ -10,7 +10,7 @@ namespace CatGen;
 /// Класс материала для передачи в шейдер
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public struct MaterialConstants
+public struct MaterialData
 {
     /// <summary>
     /// Коэффициент отражаемости поверхности
@@ -50,11 +50,26 @@ public struct MaterialConstants
     /// </summary>
     public int NormalMapIndex;
 
+    /// <summary>
+    /// Индекс карты шероховатости-металлическости поверхности
+    /// </summary>
+    public int RoughnessMapIndex;
+
+    /// <summary>
+    /// Индекс карты затенения
+    /// </summary>
+    public int OcclusionMapIndex;
+
+    /// <summary>
+    /// Индекс карты свечения
+    /// </summary>
+    public int EmissiveMapIndex;
+
     // public int MaterialPad0;
     // public int MaterialPad1;
     // public int MaterialPad2;
 
-    public static MaterialConstants Default => new MaterialConstants
+    public static MaterialData Default => new MaterialData
     {
         DiffuseAlbedo = Vector4.One,
         FresnelR0 = new Vector3(0.01f),

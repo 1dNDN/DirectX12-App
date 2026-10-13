@@ -63,11 +63,25 @@ public class Material : Dirtyable
     /// </summary>
     public int DiffuseSrvHeapIndex { get; set; } = -1;
 
-
     /// <summary>
     /// Индекс кучи ресурса шейдеров для текстуры карты нормалей
     /// </summary>
     public int NormalSrvHeapIndex { get; set; } = -1;
+
+    /// <summary>
+    /// Индекс кучи ресурса шейдеров для текстуры карты нормалей
+    /// </summary>
+    public int RoughnessSrvHeapIndex { get; set; } = -1;
+
+    /// <summary>
+    /// Индекс кучи ресурса шейдеров для текстуры карты нормалей
+    /// </summary>
+    public int OcclusionSrvHeapIndex { get; set; } = -1;
+
+    /// <summary>
+    /// Индекс кучи ресурса шейдеров для текстуры карты нормалей
+    /// </summary>
+    public int EmissiveSrvHeapIndex { get; set; } = -1;
 
     /// <summary>
     /// Коэффициент отражаемости поверхности

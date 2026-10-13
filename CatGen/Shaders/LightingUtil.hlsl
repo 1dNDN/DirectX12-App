@@ -31,7 +31,7 @@ struct Light
 struct Material
 {
     float4 DiffuseAlbedo;
-    float3 FresnelR0;
+    float FresnelR0;
     float Shininess;
 };
 

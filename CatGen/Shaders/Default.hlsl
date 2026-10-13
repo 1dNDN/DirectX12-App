@@ -32,6 +32,9 @@ struct MaterialData
     float4x4 MatTransform;
     uint     DiffuseMapIndex;
     uint     NormalMapIndex;
+    uint     RoughnessMapIndex;
+    uint     OcclusionMapIndex;
+    uint     EmissiveMapIndex;
 };
 
 
@@ -161,8 +164,11 @@ float4 PS(VertexOut pin) : SV_Target
     float  roughness = matData.Roughness;
     float  alphamode = matData.AlphaMode;
     float  alphacutoff = matData.AlphaCutoff;
-    uint diffuseTexIndex = matData.DiffuseMapIndex;
-    uint normalMapIndex = matData.NormalMapIndex;
+    int diffuseTexIndex = matData.DiffuseMapIndex;
+    int normalMapIndex = matData.NormalMapIndex;
+    int roughnessMapIndex = matData.RoughnessMapIndex;
+    int occlusionMapIndex = matData.OcclusionMapIndex;
+    int emissiveMapIndex = matData.EmissiveMapIndex;
 
     // Dynamically look up the texture in the array.
     diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
@@ -193,14 +199,28 @@ float4 PS(VertexOut pin) : SV_Target
         bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
     }
 
+    float roughnessCombined;
+    float fresnelR0Combined;
+    if (roughnessMapIndex == -1)
+    {
+        roughnessCombined = roughness;
+        fresnelR0Combined = fresnelR0;
+    } else
+    {
+        float4 roughnessMapSample = gDiffuseMap[roughnessMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+
+        roughnessCombined = roughnessMapSample.g;
+        fresnelR0Combined = roughnessMapSample.b;
+    }
+
     // Vector from point being lit to eye.
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
     // Light terms.
     float4 ambient = gAmbientLight*diffuseAlbedo;
 
-    const float shininess = 1.0f - roughness;
-    Material mat = { diffuseAlbedo, fresnelR0, shininess };
+    const float shininess = 1.0f - roughnessCombined;
+    Material mat = { diffuseAlbedo, fresnelR0Combined, shininess };
     float3 shadowFactor = 1.0f;
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW, bumpedNormalW, toEyeW, shadowFactor);
 

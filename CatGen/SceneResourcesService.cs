@@ -219,6 +219,9 @@ public class SceneResourcesService : IDisposable
         mat.MaterialCbIndex = materialIndex;
         mat.DiffuseSrvHeapIndex = textureHeapOffset + mat.DiffuseTexture ?? -1;
         mat.NormalSrvHeapIndex = textureHeapOffset + mat.NormalTexture ?? -1;
+        mat.RoughnessSrvHeapIndex = textureHeapOffset + mat.RoughnessTexture ?? -1;
+        mat.OcclusionSrvHeapIndex = textureHeapOffset + mat.OcclusionTexture ?? -1;
+        mat.EmissiveSrvHeapIndex = textureHeapOffset + mat.EmissiveTexture ?? -1;
         Materials.Add(mat);
     }
 

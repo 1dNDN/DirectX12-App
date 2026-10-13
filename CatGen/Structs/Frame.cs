@@ -11,7 +11,7 @@ public class Frame : IDisposable
     {
         CmdListAlloc = device.CreateCommandAllocator(CommandListType.Direct);
         PassConstantBuffer = new UploadBuffer<PassConstants>(device, passCount, true);
-        MaterialConstantBuffer = new UploadBuffer<MaterialConstants>(device, materialCount, false);
+        MaterialConstantBuffer = new UploadBuffer<MaterialData>(device, materialCount, false);
         ObjectConstantBuffer = new UploadBuffer<ObjectConstants>(device, objectCount, true);
     }
 
@@ -36,7 +36,7 @@ public class Frame : IDisposable
     /// Буфер констант с материалами
     /// Каждому кадру нужен свой буфер констант. Нельзя обновлять буфер констант, пока GPU рисует кадр.
     /// </summary>
-    public UploadBuffer<MaterialConstants> MaterialConstantBuffer { get; }
+    public UploadBuffer<MaterialData> MaterialConstantBuffer { get; }
 
     /// <summary>
     /// Барьер для синхронизации использования ресурсов кадра.

@@ -344,7 +344,7 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
             // data changes, it needs to be updated for each FrameResource.
             if (mat.NumFramesDirty > 0)
             {
-                var matConstants = new MaterialConstants
+                var matConstants = new MaterialData
                 {
                     DiffuseAlbedo = mat.DiffuseAlbedo,
                     FresnelR0 = mat.FresnelR0,
@@ -352,6 +352,9 @@ public class DirectXApp : BaseDirectXWindow, IRenderEngine
                     MatTransform = Matrix.Transpose(mat.MatTransform),
                     DiffuseMapIndex = mat.DiffuseSrvHeapIndex,
                     NormalMapIndex = mat.NormalSrvHeapIndex,
+                    RoughnessMapIndex = mat.RoughnessSrvHeapIndex,
+                    OcclusionMapIndex = mat.OcclusionSrvHeapIndex,
+                    EmissiveMapIndex = mat.EmissiveSrvHeapIndex,
                     AlphaMode = mat.AlphaMode,
                     AlphaCutoff = mat.AlphaCutoff,
                 };
